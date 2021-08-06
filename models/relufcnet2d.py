@@ -1,39 +1,32 @@
 #!/usr/bin/env python3
 
 import torch
-from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-class fcNet2D(nn.Module):
+class ReLUfcNet2D(nn.Module):
     """
     input size :
     N x 2 (point in space)
 
     Output size of each layer:
     N x 2 -> fc1 -> N x h
-          -> fc2 -> N x h
-          -> fc3 -> N x h
-          -> fc4 -> N x h
-          -> fc5 -> N x 1
+          -> fchidden -> N x N (x num_hidden_layers-1)
+          -> fclast -> N x 1
     """
-
-    def __init__(self, hidden=40, **kwargs):
+    def __init__(self, hidden=50, num_hidden_layers=5, **kwargs):
 
         super().__init__()
-        self.hidden = hidden # number of hidden neurons
-
-        activation_channels = []
+        self.hidden = hidden  # number of hidden neurons
+        self.num_hidden_layers = num_hidden_layers  # number of hidden layers
 
         self.fc1 = nn.Linear(2, hidden)
-        self.fc2 = nn.Linear(hidden, hidden)
-        self.fc3 = nn.Linear(hidden, hidden)
-        self.fc4 = nn.Linear(hidden, hidden)
-        self.fc5 = nn.Linear(hidden, 1)
+        self.fchidden = nn.ModuleList(
+            [nn.Linear(hidden, hidden) for i in range(num_hidden_layers - 1)])
+        self.fclast = nn.Linear(hidden, 1)
 
         self.num_params = self.get_num_params()
-
 
     def get_num_params(self):
         """ """
@@ -43,13 +36,13 @@ class fcNet2D(nn.Module):
 
         return num_params
 
-
     def forward(self, x):
         """ """
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
-        x = self.fc5(x).squeeze(1)
+
+        for fclayer in self.fchidden:
+            x = F.relu(fclayer(x))
+
+        x = self.fclast(x).squeeze(1)
 
         return x

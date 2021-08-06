@@ -1,12 +1,13 @@
-## Learning of Continuous and Piecewise-Linear Functions with Hessian Total-Variation Regularization
+## Measuring Complexity of Neural Networks via Hessian-Schatten Total-Variation
 
-#### Author: Joaquim Campos
-joaquim.campos@epfl.ch / joaquimcampos15@hotmail.com
-
-#### CoAuthor: Shayan Aziznejad
+#### Authors: Joaquim Campos, Shayan Aziznejad
+joaquim.campos@epfl.ch
 shayan.aziznejad@epfl.ch
 
-#### Professor: Michael Unser
+#### Group Leader: Michael Unser
 michael.unser@epfl.ch
+
+#### Description
+This project proposes a measure of complexity for Neural Networks based on the Hessian-Schatten Total-Variation.
 
 All rights reserved to the Biomedical Imaging Group, EPFL, Lausanne

@@ -6,99 +6,93 @@
 #                   'num_epochs' : 300,
 #                   'train' : False}
 
-default_values = { 'method'          : 'htv',
-                   'log_dir'         : 'output',
-                   'model_name'      : 'htv',
-                   'verbose'         : False,
-                   'dataset_name'    : 'quad_top_planes',
-                   'only_vertices'   : False,
-                   'num_train'       : 650,
-                   'valid_fraction'  : 0.2,
-                   'add_noise'       : False,
-                   'noise_ratio'     : 0.05,
-                   'seed'            : -1,
-                   'data_dir'        : './data',
-                   'lsize'           : 60,
-                   'C_init'          : 'zero',
-                   'num_iter'        : 1,
-                   'admm_iter'       : 60000,
-                   'lmbda'           : 0.01,
-                   'no_linear'       : False,
-                   'reduced'         : False,
-                   'pos_constraint'  : False,
-                   'no_simplex'      : False,
-                   'sigma_rule'      : 'same',
-                   'eps'             : 1,
-                   'plot'            : False,
-                   'html'            : False,
-                   # neural net
-                   'net_model'       : 'fcnet2d',
-                   'hidden'          : 20,
-                   'batch_size'      : 64,
-                   'num_workers'     : 4,
-                   'weight_decay'    : 1e-4,
-                   'milestones'      : [750, 900],
-                   'num_epochs'      : 1000,
-                   'log_step'        : None,
-                   'valid_log_step'  : None,
-                   'ckpt_filename'   : None,
-                   'restore'         : False, # restore model
-                   'ckpt_nmax_files' : -1, # max number of saved *_net_*.ckpt
-                                            # checkpoint files at a time. Set to -1 if not restricted. '
-                   'device'          : 'cuda:0'
-                 }
-
+default_values = {
+    'method': 'neural_net',
+    'log_dir': 'output',
+    'model_name': 'htv-complexity',
+    'lmbda': 0.01,
+    'htv_mode': 'finite_diff_differential',
+    'no_htv': False,
+    'dataset_name': 'cpwl',
+    'num_train': 1000,
+    'data_dir': './data',
+    'valid_fraction': 0.2,
+    'test_as_valid': False,
+    'noise_ratio': 0.,
+    'seed': -1,
+    'verbose': False,
+    # lattice
+    'lsize': 60,
+    'C_init': 'zero',
+    # algorithm
+    'num_iter': 1,
+    'admm_iter': 200000,
+    'sigma_rule': 'constant',
+    # rbf
+    'eps': 5,  # rbf. kernel size
+    'htv_grid': 0.0005,
+    # neural net
+    'net_model': 'relufcnet2d',
+    'hidden': 50,
+    'num_hidden_layers': 5,
+    'batch_size': 50,
+    'num_workers': 4,
+    'weight_decay': 1e-6,
+    'milestones': [540, 580],
+    'num_epochs': 600,
+    'log_step': None,
+    'valid_log_step': None,
+    'ckpt_filename': None,
+    'restore': False,  # restore model
+    'ckpt_nmax_files': 3,  # max number of saved *_net_*.ckpt
+    # checkpoint files at a time. Set to -1 if not restricted. '
+    'device': 'cuda:0'
+}
 
 # This tree defines the strcuture of self.params in the Project() class.
-# if it is desired to keep an entry in the first level that is also a leaf of deeper
-# levels of the structure, this entry should be added to the first level too
-# (as done for 'dataloader')
+# if it is desired to keep an entry in the first level that is also a leaf of
+# deeper levels of the structure, this entry should be added to the first
+# level too (as done for 'dataloader')
 
-structure = {   'verbose'    : None,
-                'plot'       : None,
-                'model_name' : None,
-                'log_dir'    : None,
-                'num_iter'   : None,
-                'data' :
-                    {'dataset_name'   : None,
-                     'only_vertices'  : None,
-                     'num_train'      : None,
-                     'valid_fraction' : None,
-                     'add_noise'      : None,
-                     'noise_ratio'    : None,
-                     'no_linear'      : None,
-                     'seed'           : None,
-                     'verbose'        : None
-                    },
-                'lattice' :
-                    {'lsize'       : None,
-                     'C_init'      : None,
-                     'verbose'     : None
-                     },
-                'plots' :
-                    {'html'    : None,
-                     'log_dir' : None
-                    },
-                'algorithm' :
-                    {'num_iter'        : None,
-                     'admm_iter'       : None,
-                     'lmbda'           : None,
-                     'reduced'         : None,
-                     'pos_constraint'  : None,
-                     'no_simplex'      : None,
-                     'sigma_rule'      : None,
-                     'verbose'         : None,
-                     'model_name'      : None,
-                     },
-                'rbf' :
-                    {'eps' : None,
-                     'lmbda': None
-                     },
-                # neural net
-                'model':
-                    {'hidden' : None},
-                'dataloader':
-                    {'batch_size'  : None,
-                     'num_workers' : None,
-                     }
-            }
+structure = {
+    'log_dir': None,
+    'model_name': None,
+    'lmbda': None,
+    'verbose': None,
+    'data': {
+        'dataset_name': None,
+        'num_train': None,
+        'data_dir': None,
+        'valid_fraction': None,
+        'test_as_valid': None,
+        'noise_ratio': None,
+        'seed': None,
+        'verbose': None
+    },
+    'lattice': {
+        'lsize': None,
+        'C_init': None,
+        'verbose': None
+    },
+    'algorithm': {
+        'model_name': None,
+        'lmbda': None,
+        'num_iter': None,
+        'admm_iter': None,
+        'sigma_rule': None,
+        'verbose': None
+    },
+    'rbf': {
+        'eps': None,
+        'lmbda': None
+    },
+    # neural net
+    'model': {
+        'hidden': None,
+        'num_hidden_layers': None
+    },
+    'dataloader': {
+        'batch_size': None,
+        'num_workers': None
+    }
+}

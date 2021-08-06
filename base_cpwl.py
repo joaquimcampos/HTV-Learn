@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-class BaseCPWL(ABC):
 
+class BaseCPWL(ABC):
     @abstractmethod
     def evaluate(self, x):
         """ Evaluate cpwl function at x.

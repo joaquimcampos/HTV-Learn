@@ -1,34 +1,164 @@
 import os
 import torch
-import copy
-import math
 import numpy as np
-from PIL import Image
-import scipy.spatial
+import math
+import scipy
 
-import htv_utils
+from lattice import Lattice
 from delaunay import Delaunay
+from grid import Grid
+
+
+class Hex():
+    """ Hexagonal lattice vectors """
+    v1 = np.array([1., 0.])
+    v2 = np.array([0.5, math.sqrt(3) / 2])
+
+
+class BoxSpline():
+    center_points = np.array([0., 0.])
+    border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
+                              -Hex.v1, -Hex.v2, -Hex.v2 + Hex.v1])
+    points = np.vstack((center_points, border_points))
+    values = np.array([math.sqrt(3) / 2, 0., 0., 0., 0., 0., 0.])
+    htv = 12
+
+
+class NormalizedBoxSpline(BoxSpline):
+    values = BoxSpline.values.copy()
+    values[0] = 1.
+    htv = 12 / (math.sqrt(3) / 2)
+
+
+class DistortedBoxSpline():
+    np.random.seed(3)
+    center_points = np.array([0., 0.]) + np.random.uniform(-0.2, 0.2, (2, ))
+    border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
+                              -Hex.v1, -Hex.v2, -Hex.v2 + Hex.v1]) + \
+        np.random.uniform(-0.2, 0.2, (6, 2))
+    points = np.vstack((center_points, border_points))
+    values = np.array([math.sqrt(3) / 2, 0., 0., 0., 0., 0., 0.])
+
+
+class Pyramid():
+    points = np.vstack((BoxSpline.center_points,
+                        BoxSpline.border_points,
+                        2 * BoxSpline.border_points,
+                        3 * BoxSpline.border_points))
+    values = np.array([2., 1., 1., 1., 1., 1., 1.,
+                       0., 0., 0., 0., 0., 0.,
+                       0., 0., 0., 0., 0., 0., ])
+    htv = 16 * math.sqrt(3)
+
+
+class CutPyramid(Pyramid):
+    values = Pyramid.values.copy()
+    values[0] = 1.
+
+
+class SoftPyramid(Pyramid):
+    values = Pyramid.values.copy()
+    values[7:13] = 0.5
+    values[13::] = 0.
+
+
+class SimpleJunction():
+    points = np.array([[0., 0.], [1., 0.], [0., 1.], [1., 1.],
+                       [0., 3. / 4], [1., 1. / 4]])
+    values = np.array([0., 2. / 3, 2. / 3, 0., 1., 1.])
+    # gradients
+    a1_affine_coeff = np.array([2. / 3, 4. / 3., 0.])
+    a2_affine_coeff = np.array([-2. / 3, -4. / 3., 2.])
+    htv = 10. / 3
+
+
+class AnotherJunction():
+    points = np.array([[0., 0.], [1., 0.], [0., 1.], [1., 1.]])
+    values = np.array([0., 1., 1., 0.])
+    htv = 4
+
+
+class AssymetricSimpleJunction(SimpleJunction):
+    values = np.array([1., 1., 2. / 3, 0., 1., 1.])
+    a1_affine_coeff = np.array([0., 0., 0.])
+    htv = 5. / 3
+
+
+def init_distorted_grid(size_=(3, 3), range_=(-1, 1)):
+    """ """
+    assert isinstance(size_, tuple)
+    assert len(size_) == 2
+    u = np.linspace(*range_, size_[0]) * 1.
+    v = np.linspace(*range_, size_[1]) * 1.
+    u, v = np.meshgrid(u, v)
+    u = u.flatten()
+    v = v.flatten()
+
+    mask = np.ma.mask_or(np.abs(u) == u.max(), np.abs(v) == v.max())
+    # noisy
+    x, y = u, v
+    for vec in [x, y]:
+        noise = (np.random.rand(*u.shape) - 0.5) * (u[1] - u[0])
+        # don't add noise to boundary vertices
+        vec[~mask] = vec[~mask] + noise[~mask]
+
+    return np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
+
+
+class RealData:
+    points = init_distorted_grid(size_=(3, 3))
+    values = (np.random.rand(points.shape[0], ) - 0.5)
 
 
 class Data():
-
-    def __init__(self, lattice_obj, data_from_ckpt=None, **params):
+    def __init__(self,
+                 data_from_ckpt=None,
+                 dataset_name=None,
+                 num_train=None,
+                 data_dir='./data',
+                 valid_fraction=0.2,
+                 test_as_valid=False,
+                 noise_ratio=0.,
+                 seed=-1,
+                 verbose=False,
+                 **kwargs):
         """
         Args:
-            lattice_obj: Object of class lattice
-            params: data parameters
+            data_from_ckpt:
+            dataset_name:
+            num_train:
+            data_dir:
+            valid_fraction:
+            test_as_valid:
+            noise_ratio:
+            seed:
+            verbose:
         """
-        self.params = params
-        self.lat = lattice_obj
+        # TODO: Complete Args in docstring
         self.data_from_ckpt = data_from_ckpt
 
-        htv_utils.set_attributes(self, ['dataset_name', 'only_vertices', 'num_train',
-                                        'valid_fraction', 'add_noise', 'noise_ratio',
-                                        'no_linear', 'seed', 'verbose'])
+        self.dataset_name = dataset_name
+        self.num_train = num_train
 
-        torch.manual_seed(self.seed)
-        np.random.seed(self.seed)
+        if self.data_from_ckpt is None:
+            assert self.dataset_name is not None, 'self.dataset_name is None.'
+            assert self.num_train is not None, 'self.num_train is None.'
+
+        self.data_dir = data_dir
+        self.valid_fraction = valid_fraction
+        self.test_as_valid = test_as_valid
+        self.noise_ratio = noise_ratio
+        self.seed = seed
+        self.verbose = verbose
+
+        # set seeds
+        if self.seed >= 0:
+            torch.manual_seed(self.seed)
+            torch.cuda.manual_seed_all(self.seed)
+            np.random.seed(self.seed)
+
         self.train, self.valid, self.test = {}, {}, {}
+        self.delaunay = {}  # points and values for delaunay triangulation
 
         if self.data_from_ckpt is not None:
             assert 'train' in self.data_from_ckpt
@@ -39,177 +169,108 @@ class Data():
             self.valid = self.data_from_ckpt['valid']
             self.test = self.data_from_ckpt['test']
 
-        if self.dataset_name.startswith('pyramid'):
-            self.define_pyramid()
+            if 'delaunay' in self.data_from_ckpt:
+                assert 'points' in self.data_from_ckpt['delaunay']
+                assert 'values' in self.data_from_ckpt['delaunay']
 
-        elif self.dataset_name.endswith('planes') or self.dataset_name == 'face':
-            self.define_triangulation_data()
+                self.delaunay['points'] = \
+                    self.data_from_ckpt['delaunay']['points']
+                self.delaunay['values'] = \
+                    self.data_from_ckpt['delaunay']['values']
 
-        elif self.dataset_name == 'noisy_linear':
-            self.define_noisy_linear()
+        self.init_data()
 
-        # Best linear interpolator of the data
-        m = self.train['input'].size(0)
-        # create extended matrix mth-row: [x1, x2, 1]
-        train_A = torch.cat((self.train['input'], torch.ones(m, 1)), dim=1)
-        beta_np, _,_,_ = np.linalg.lstsq(train_A.numpy(), self.train['values'], rcond=None)
-        beta = torch.from_numpy(beta_np)
-
-        n = self.test['input'].size(0)
-        test_A = torch.cat((self.test['input'], torch.ones(n, 1)), dim=1)
-        output = torch.mv(test_A, beta)
-        mse, _ = htv_utils.compute_mse_psnr(output, self.test['values'])
-
-        if self.verbose:
-            print(f'\nBest linear interpolator Test mse: {mse}')
-
-
-    def define_noisy_linear(self):
+    def init_data(self):
         """ """
-        self.a = torch.tensor([.3, .2])
-        self.b = torch.tensor([.1])
+        if not bool(self.delaunay):
+            if self.dataset_name.startswith('cpwl'):
+                self.delaunay['points'] = \
+                    init_distorted_grid(size_=(3, 3), range_=(-1, 1))
+                self.delaunay['values'] = \
+                    (np.random.rand(self.delaunay['points'].shape[0],) - 0.5)
 
-        x_lat = torch.empty((int(self.num_train), 2))
-        x_lat.uniform_(self.lat.lmin, self.lat.lmax)
-        input = self.lat.lattice_to_standard(x_lat)
-        values = self.evaluate_linear(input)
+            elif self.dataset_name.startswith('face'):
+                self.delaunay['points'], self.delaunay['values'] = \
+                    self.init_face(cut=False)
 
-        self.noise_std = self.noise_ratio * (values.max() - values.min())
-        noisy_values = self.add_noise_to_values(values)
+            elif self.dataset_name.startswith('cut_face'):
+                self.delaunay['points'], self.delaunay['values'] = \
+                    self.init_face(cut=True)
 
-        if self.data_from_ckpt is None:
-            self.train['input'] = input
-            self.train['values'] = noisy_values
-            self.valid = copy.deepcopy(self.train)
-            self.test = copy.deepcopy(self.train)
+        self.cpwl = Delaunay(points=self.delaunay['points'],
+                             values=self.delaunay['values'])
 
-        mse, _ = htv_utils.compute_mse_psnr(noisy_values, values)
-        if self.verbose:
-            print(f'Noisy linear noisy-target mse  : {mse}')
+        if not bool(self.test):  # if empty
+            self.test['input'] = self.cpwl.get_grid(h=0.01,
+                                                    to_numpy=False,
+                                                    to_float32=True).x
+            self.test['values'] = self.cpwl.evaluate(self.test['input'])
 
+        if not bool(self.train):
+            # training/validation data
+            num_train_valid_samples = int(self.num_train)
+            x = torch.empty((num_train_valid_samples, 2))
+            x[:, 0].uniform_(self.delaunay['points'][:, 0].min(),
+                             self.delaunay['points'][:, 0].max())
+            x[:, 1].uniform_(self.delaunay['points'][:, 1].min(),
+                             self.delaunay['points'][:, 1].max())
 
-    def define_pyramid(self):
-        """ """
-        assert self.lat.lsize * self.lat.h == 1
-        if not self.lat.lsize % 20 == 0:
-            raise ValueError(f'lat size {self.lat.lsize} is not a multiple of 20.')
-        h = self.lat.lsize/10
-
-        input = torch.tensor([[h, 0.], [0., h], [h, -h],
-                                [0., -h], [-h, 0.], [-h, h],
-                                [2*h, 0.],  [0., 2*h],  [2*h, -2*h],
-                                [0., -2*h], [-2*h, 0.], [-2*h, 2*h]])
-
-        ht = 2*h*self.lat.h
-        values = torch.tensor([ht+.1, ht+.1, ht+.1, ht+.1, ht+.1, ht+.1,
-                                .1, .1, .1, .1, .1, .1])
-
-        if self.dataset_name == 'pyramid_ext': # extended pyramid dataset
-            input_ext = torch.tensor([[3*h, 0.],  [0., 3*h],  [2.95*h, -2.85*h],
-                                    [0., -3*h], [-3*h, 0.], [-3*h, 3*h]])
-            input = torch.cat((input, input_ext), dim=0)
-
-            values_ext = torch.tensor([.1, .1, .1, .1, .1, .1])
-            values = torch.cat((values, values_ext), dim=0)
-
-        self.a, self.b = torch.zeros(2), torch.zeros(1)
-        if not self.no_linear:
-            self.a, self.b = torch.tensor([.2, .2]), torch.tensor([.1])
-            values = values + self.evaluate_linear(self.lat.lattice_to_standard(input))
-
-        if self.data_from_ckpt is None:
-            self.train['input'] = input
-            self.train['values'] = values
-            self.valid = copy.deepcopy(self.train)
-            self.test = copy.deepcopy(self.train)
-
-            self.lat.convert_to_standard_basis(self.train, self.valid, self.test)
-
-
-
-    def define_triangulation_data(self):
-        """ """
-        if self.dataset_name.endswith('planes'):
-            self.init_planes()
-
-            # for planes, domain is whole lattice
-            bottom_left_std = \
-                self.lat.lattice_to_standard(torch.tensor([[self.lat.lmin, self.lat.lmin]]).float()).squeeze()
-            upper_right_std = \
-                self.lat.lattice_to_standard(torch.tensor([[self.lat.lmax, self.lat.lmax]]).float()).squeeze()
-
-            x_min, x_max = bottom_left_std[0], upper_right_std[0]
-            y_min, y_max = bottom_left_std[1], upper_right_std[1]
-
-        elif self.dataset_name == 'face':
-            # for face, domain is a square around it
-            x_min, y_min, x_max, y_max = self.init_face()
-
-        # test data is a fine grid in standard coordinates
-        if self.dataset_name == 'face':
-            step = (x_max-x_min)/100
-        else:
-            step = (x_max-x_min)/400
-
-        x1 = torch.arange(x_min, x_max, step)
-        x2 = torch.arange(y_min, y_max, step)
-
-        # sample test set on standard grid but only retain
-        # the samples inside the lattice
-        x_test, _ = htv_utils.get_grid(x1, x2)
-        # only select input inside latticce
-        test_lattice_mask = \
-            self.lat.get_lattice_mask(self.lat.standard_to_lattice(x_test))
-        self.test['input'] = x_test[test_lattice_mask, :].clone()
-
-        # training/validation data
-        num_train_valid_samples = int(self.num_train)
-        x = torch.empty((num_train_valid_samples, 2))
-
-        if self.dataset_name.endswith('planes'):
-            x.uniform_(self.lat.lmin, self.lat.lmax)
-            x = self.lat.lattice_to_standard(x)
-            assert self.lat.inside_lattice(self.lat.standard_to_lattice(x))
-        else:
-            x[:, 0].uniform_(x_min, x_max)
-            x[:, 1].uniform_(y_min, y_max)
-            train_lattice_mask = \
-                self.lat.get_lattice_mask(self.lat.standard_to_lattice(x))
-            x = x[train_lattice_mask, :].clone()
-
-        # split idx for training and validation data
-        split_idx = int((1-self.valid_fraction)*num_train_valid_samples)
-        self.valid['input'] = x[(split_idx+1)::]
-
-        # training data
-        if self.only_vertices:
-            # only use vertices of planes as training data
-            self.train['input'] = self.vertices[:, 0:2]
-        else:
+            # split idx for training and validation data
+            split_idx = int(
+                (1 - self.valid_fraction) * num_train_valid_samples)
             self.train['input'] = x[0:split_idx]
+            self.train['values'] = self.cpwl.evaluate(self.train['input'])
 
-        print('\nNumber of training data points : {}'.format(self.train['input'].size(0)))
-        print('Number of test data points : {}'.format(self.test['input'].size(0)))
+            if self.dataset_name.endswith('gaps'):
+                # [(gap_x_min, gap_x_max)...]
+                gap_x_range = [[0.108, 0.234], [-0.07, 0.226],
+                               [-0.234, -0.108]]
+                # [(gap_y_min, gap_y_max)...]
+                gap_y_range = [[-0.21, 0.07], [0.19, 0.311], [-0.21, 0.063]]
 
-        evaluate = self.delaunay.evaluate if self.dataset_name == 'face' else self.planes_function
+                for i in range(len(gap_x_range)):
+                    gap_mask = (
+                        (self.train['input'][:, 0] >= gap_x_range[i][0]) *
+                        (self.train['input'][:, 0] <= gap_x_range[i][1]) *
+                        (self.train['input'][:, 1] >= gap_y_range[i][0]) *
+                        (self.train['input'][:, 1] <= gap_y_range[i][1]))
 
-        if 'values' not in self.test:
-            self.test['values'] = evaluate(self.test['input'])
+                    self.train['input'] = self.train['input'][~gap_mask]
+                    self.train['values'] = self.train['values'][~gap_mask]
 
-        if 'values' not in self.valid:
-            self.valid['values'] = evaluate(self.valid['input'])
+            if not np.allclose(self.noise_ratio, 0.):
+                self.train['values'] = \
+                    self.add_noise_to_values(self.train['values'])
 
-        if 'values' not in self.train:
-            self.train['values'] = evaluate(self.train['input'])
+            if not bool(self.valid):
+                if self.test_as_valid:
+                    self.valid['input'] = self.test['input'].clone()
+                    self.valid['values'] = self.test['values'].clone()
+                else:
+                    self.valid['input'] = x[(split_idx + 1)::]
+                    self.valid['values'] = \
+                        self.cpwl.evaluate(self.valid['input'])
 
-            if self.add_noise is True:
-                self.train['values'] = self.add_noise_to_values(self.train['values'])
+        print('\nNumber of training data points : '
+              f'{self.train["input"].size(0)}')
+        print(f'Number of test data points : {self.test["input"].size(0)}')
 
+    def add_noise_to_values(self, values):
+        """  """
+        noise_std = self.noise_ratio * (values.max() - values.min())
+        if self.verbose:
+            print(f'Adding noise of standard deviation s = {noise_std}')
+        noise = torch.empty_like(values).normal_(std=noise_std)
 
-    @staticmethod
-    def read_face():
+        return values + noise
 
-        obj_file = 'face_data/obj_free_male_head.obj'
+    def read_face(self, cut_eps=0.6):
+        """
+        Args:
+            cut_eps:
+                what height to cut face relative to its maximum height.
+        """
+        obj_file = os.path.join(self.data_dir, 'obj_free_male_head.obj')
 
         V = []
         with open(obj_file, "r") as file1:
@@ -231,279 +292,125 @@ class Data():
         unique_sort_vert = sort_vert[unique_dx]
 
         # eliminate vertices whose height is below cutoff
-        eps = 0.6
-        min_height, max_height = unique_sort_vert[:, 2].min(), unique_sort_vert[:, 2].max()
-        cutoff_val = min_height + (max_height - min_height) * eps
+        min_height = unique_sort_vert[:, 2].min()
+        max_height = unique_sort_vert[:, 2].max()
+        cutoff_val = min_height + (max_height - min_height) * cut_eps
         cutoff_mask = np.where(unique_sort_vert[:, 2] > cutoff_val)[0]
         cleaned_vert = unique_sort_vert[cutoff_mask]
-        cleaned_vert[:, 2] = cleaned_vert[:, 2] - cutoff_val # shift z.min() to z = 0
-        cleaned_vert[:, 0] = cleaned_vert[:, 0] - cleaned_vert[:, 0].mean() # shift x around 0
-        cleaned_vert[:, 1] = cleaned_vert[:, 1] - cleaned_vert[:, 1].mean() # shift t around 0
+        cleaned_vert[:, 2] = cleaned_vert[:, 2] - \
+            cutoff_val  # shift z.min() to z = 0
+        x_mean = cleaned_vert[:, 0].min() / 2. + cleaned_vert[:, 0].max() / 2.
+        y_mean = cleaned_vert[:, 1].min() / 2. + cleaned_vert[:, 1].max() / 2.
+        cleaned_vert[:, 0] = cleaned_vert[:, 0] - x_mean  # shift x around 0
+        cleaned_vert[:, 1] = cleaned_vert[:, 1] - y_mean  # shift t around 0
 
         return cleaned_vert
 
-
-
-    def init_face(self):
+    def init_face(self, cut=False):
         """ """
         vert = self.read_face()
 
-        # normalize face to fit in lattice
-        hw_ratio = vert[:, 1].max()/vert[:, 0].max()
-        x_min, y_min, x_max, y_max = self.get_data_boundaries(hw_ratio=hw_ratio, pad=0.03)
-        assert x_max > 0
-        ratio = x_max/vert[:, 0].max()
-        vert = vert * ratio
+        # normalize face to fit in [-0.8, 0.8]^2 square
+        max_ = max(np.abs(vert[:, 0]).max(), np.abs(vert[:, 1]).max())
+        vert = vert / max_ * 0.8
 
-        # add zeros around face
-        points = vert[:, 0:2]
-        hull = scipy.spatial.ConvexHull(points)
-        hull_points = points[hull.vertices]
+        if cut is True:
+            cpwl_aux = Delaunay(points=vert[:, 0:2].copy(),
+                                values=vert[:, 2].copy())
 
-        # add zeros to the convex hull contour of face
-        for i in range(hull.vertices.shape[0]):
+            x_min, x_max = -0.324, 0.324
+            y_min, y_max = -0.45, 0.419
+
+            mask = (vert[:, 0] > x_min) * (vert[:, 0] < x_max) * \
+                (vert[:, 1] > y_min) * (vert[:, 1] < y_max)
+            vert = vert[mask]
+
+            hull_points = np.array([[x_min, y_min], [x_max, y_min],
+                                    [x_max, y_max], [x_min, y_max]])
+
+            hull_values = cpwl_aux.evaluate(hull_points)
+            new_vertices = np.concatenate(
+                (hull_points, hull_values[:, np.newaxis]), axis=1)
+            vert = np.concatenate((vert, new_vertices), axis=0)
+        else:
+            points = vert[:, 0:2]
+            hull = scipy.spatial.ConvexHull(points)
+            hull_points = points[hull.vertices]
+
+        for i in range(hull_points.shape[0]):
             frac = np.linspace(0.01, 0.99, num=99)[:, np.newaxis]
-            next_vert = i+1 if i != hull.vertices.shape[0] - 1 else 0
+            next_vert = i + 1 if i != hull_points.shape[0] - 1 else 0
             new_points = hull_points[next_vert][np.newaxis, :] * frac + \
-                        hull_points[i][np.newaxis, :] * (1-frac)
-            new_vertices = np.concatenate((new_points, np.zeros((new_points.shape[0],1))), axis=1)
+                hull_points[i][np.newaxis, :] * (1 - frac)
+
+            if cut is True:
+                # evaluate on convex hull of face
+                new_values = cpwl_aux.evaluate(new_points)
+            else:
+                # add zeros around face (to its convex hull contour)
+                new_values = np.zeros(new_points.shape[0])
+
+            new_vertices = np.concatenate(
+                (new_points, new_values[:, np.newaxis]), axis=1)
             vert = np.concatenate((vert, new_vertices), axis=0)
 
-        # create grid of points around face and assign zero values to these
-        x_min, x_max = hull_points[:, 0].min()-0.04, hull_points[:, 0].max()+0.04
-        y_min, y_max = hull_points[:, 1].min()-0.04, hull_points[:, 1].max()+0.04
+        if cut is False:
+            # create grid of points with zero value around face
+            h = 0.01
+            x_r = vert[:, 0].max() * 10. / 8.
+            y_r = vert[:, 1].max() * 9.5 / 8.
+            fine_grid = Grid(x1_min=-x_r,
+                             x1_max=x_r + h,
+                             x2_min=-y_r,
+                             x2_max=y_r + h,
+                             h=h,
+                             to_float32=True).x
 
-        step = (x_max-x_min)/100
-        x1 = torch.arange(x_min, x_max, step)
-        x2 = torch.arange(y_min, y_max, step)
+            # only retain points outside face convex hull
+            aux_delaunay = scipy.spatial.Delaunay(points)
+            fine_grid = fine_grid[
+                aux_delaunay.find_simplex(fine_grid) < 0].numpy()
+            # add zeros around face
+            new_vertices = np.concatenate(
+                (fine_grid, np.zeros((fine_grid.shape[0], 1))), axis=1)
+            vert = np.concatenate((vert, new_vertices), axis=0)
 
-        # only retain the samples inside the lattice
-        fine_grid, _ = htv_utils.get_grid(x1, x2)
-        # only select input inside latticce
-        lattice_mask = self.lat.get_lattice_mask(self.lat.standard_to_lattice(fine_grid))
-        fine_grid = fine_grid[lattice_mask, :].clone()
+        vert = self.fit_in_lattice(vert)
 
-        # only retain points outside face convex hull
-        aux_delaunay = scipy.spatial.Delaunay(points)
-        fine_grid = fine_grid[aux_delaunay.find_simplex(fine_grid)<0]
-        new_vertices = np.concatenate((fine_grid, np.zeros((fine_grid.shape[0],1))), axis=1)
-        vert = np.concatenate((vert, new_vertices), axis=0)
+        return vert[:, 0:2], vert[:, 2]
 
-        # add lattice vertices
-        lat_corners = torch.tensor([
-                                    [self.lat.lmin, self.lat.lmin], # 8
-                                    [self.lat.lmax, self.lat.lmin], # 9
-                                    [self.lat.lmin, self.lat.lmax], # 10
-                                    [self.lat.lmax, self.lat.lmax] # 11
-                                    ])
-        # standard coordinates
-        std_corners = self.lat.lattice_to_standard(lat_corners.float())
-        new_vertices = torch.cat((std_corners, torch.zeros(std_corners.size(0), 1)), dim=1)
-        vert = np.concatenate((vert, new_vertices.numpy()), axis=0)
-
-        self.delaunay = Delaunay(points=vert[:, 0:2], values=vert[:, 2])
-
-        self.triangles = torch.from_numpy(self.delaunay.tri.simplices).long()
-        self.vertices = torch.from_numpy(vert)
-        self.affine_coeff = torch.from_numpy(self.delaunay.tri.simplices_affine_coeff)
-
-        self.a, self.b = torch.zeros(2), torch.zeros(1)
-
-        # return square around face
-        return x_min, y_min, x_max, y_max
-
-
-    def init_planes(self):
-        """ Initialize planes vertice triangulation and values;
-        initialize triangle centers, plane coefficients, and affine coefficients.
-        Everything is in standard coordinates.
-        """
-        if self.dataset_name == 'quad_top_planes':
-
-            pad = 0.08
-            x_min, _, x_max, _ = self.get_data_boundaries(hw_ratio=0.01, pad=pad)
-            _, y_min, _, y_max = self.get_data_boundaries(hw_ratio=100, pad=pad)
-
-            dx = (x_max - x_min) / 100 # delta x step
-            dy = (y_max - y_min) / 100 # delta y step
-
-            # control points with values - (x1, x2, val)
-            self.vertices = torch.tensor([
-                                        [x_min+30*dx,    y_min+35*dy,    dx*20], # 0
-                                        [x_max-40*dx,    y_min+30*dy,    dx*20], # 1
-                                        [x_max-35*dx,    y_max-30*dy,    dx*20], # 2
-                                        [x_min+40*dx,    y_max-30*dy,    dx*20], # 3
-                                        [x_max-25*dx,    y_min+5*dy,     0.], # 4
-                                        [x_min+25*dx,    y_max-5*dy,    0.] # 5
-                                        ])
-
-            # triangulation of the planes function (vertices for each triangle)
-            # size (num_triangles, vertices)
-            self.triangles = torch.tensor([
-                                        [0, 1, 3], # A
-                                        [1, 2, 3], # B
-                                        [4, 1, 0], # C
-                                        [0, 3, 5], # D
-                                        [4, 2, 1], # E
-                                        [3, 2, 5] # F
-                                        ])
-
-            # check values of vertices so that there is a seamless plane junction
-            x_v6 = self.get_zero_loc(2, 3, zval=0)
-            x_v7 = self.get_zero_loc(4, 5, zval=0)
-
-            new_vertices = torch.tensor([
-                                        [x_v6[0], x_v6[1], 0.], # 6
-                                        [x_v7[0], x_v7[1], 0.] # 7
-                                        ])
-            self.vertices = torch.cat((self.vertices, new_vertices), dim=0)
-
-            new_triangles = torch.tensor([
-                                        [6, 4, 0],
-                                        [6, 0, 5],
-                                        [4, 7, 2],
-                                        [2, 7, 5]
-                                        ])
-            self.triangles = torch.cat((self.triangles, new_triangles), dim=0)
-
-            lat_corners = torch.tensor([
-                                        [self.lat.lmin, self.lat.lmin], # 8
-                                        [self.lat.lmax, self.lat.lmin], # 9
-                                        [self.lat.lmin, self.lat.lmax], # 10
-                                        [self.lat.lmax, self.lat.lmax] # 11
-                                        ])
-            # standard coordinates
-            std_corners = self.lat.lattice_to_standard(lat_corners.float())
-            new_vertices = torch.cat((std_corners, torch.zeros(std_corners.size(0), 1)), dim=1)
-
-            self.vertices = torch.cat((self.vertices, new_vertices), dim=0)
-
-            new_triangles = torch.tensor([
-                                        [6, 5, 10],
-                                        [5, 7, 10],
-                                        [10, 7, 11],
-                                        [4, 11, 7],
-                                        [8, 4, 6],
-                                        [8, 6, 10],
-                                        [8, 9, 4],
-                                        [9, 11, 4]
-                                        ])
-
-            self.triangles = torch.cat((self.triangles, new_triangles), dim=0)
-
-            if self.add_noise:
-                self.noise_std = self.noise_ratio * self.vertices[:, 2].max()
-                print('noise_std: {:.3f}'.format(self.noise_std))
-
-            self.a, self.b = torch.zeros(2), torch.zeros(1)
-            if not self.no_linear:
-                # add linear term to first vertices
-                self.a, self.b = torch.tensor([0.1, 0.05]), torch.tensor([-0.05])
-                self.vertices[:, 2] += self.evaluate_linear(self.vertices[:, 0:2])
-
-
-        num_triangles = self.triangles.size(0)
-        # size (num_triangles, 3, 3)
-        self.triangles_with_values = \
-            torch.cat(tuple(self.vertices[self.triangles[i]].unsqueeze(0) for i in range(num_triangles)), dim=0)
-
-        # size (num_triangles, 3, 3)
-        self.triangles_barycentric_mat = \
-            self.lat.append_ones(self.triangles_with_values[:, :, 0:2], dim=-1).transpose(1, 2)
-
-        self.inv_triangles_barycentric_mat = \
-            torch.inverse(self.triangles_barycentric_mat)
-        assert self.inv_triangles_barycentric_mat.size() == (self.triangles.size(0), 3, 3)
-
-        self.triangle_centers = \
-            self.lat.get_triangle_centers(self.triangles_with_values[:, :, 0:2])
-
-        plane_coeff = self.lat.solve_method(self.triangles_with_values)
-        self.affine_coeff = self.lat.get_affine_coeff_from_plane_coeff(plane_coeff)
-
-
-    def get_zero_loc(self, tri1_idx, tri2_idx, zval=0):
+    def fit_in_lattice(self, vert):
         """ """
-        # size (2, 3, 3)
-        idx_vec = [tri1_idx, tri2_idx]
-        triangles_with_values = \
-            torch.cat(tuple(self.vertices[self.triangles[i]].unsqueeze(0) for i in idx_vec), dim=0)
+        # normalize face to fit in lattice
+        hw_ratio = (vert[:, 1].max() - vert[:, 1].min()) / \
+                   (vert[:, 0].max() - vert[:, 0].min())
+        _, _, x_max, y_max = self.get_data_boundaries(hw_ratio=hw_ratio,
+                                                      pad=0.03)
 
-        plane_coeff = self.lat.solve_method(triangles_with_values)
-        affine_coeff = self.lat.get_affine_coeff_from_plane_coeff(plane_coeff) # (2, 3)
-        assert affine_coeff.size() == (2,3)
+        # recenter data
+        x_mean = (vert[:, 0].max() + vert[:, 0].min()) / 2
+        y_mean = (vert[:, 1].max() + vert[:, 1].min()) / 2
+        vert[:, 0] = vert[:, 0] - x_mean
+        vert[:, 1] = vert[:, 1] - y_mean
 
-        B = -affine_coeff[:, -1:] + zval
-        A = affine_coeff[:, 0:2]
-        x, _ = torch.solve(B, A)
+        # x,y scaling factors
+        # vert[i,0] should be within (-x_max, x_max)
+        # vert[i,1] should be within (-y_max, y_max)
+        x_norm = x_max / vert[:, 0].max()
+        y_norm = y_max / vert[:, 1].max()
 
-        return x.squeeze(-1)
-
-
-
-    def check_my_triangle(self, x):
-        """ """
-        # size (num_triangles, 3, 3) x (m, 1, 3, 1) = (m, num_triangles, 3, 1) -> (m, num_triangles, 3)
-        x_barycentric_tensor = self.lat.append_ones(x, dim=-1).unsqueeze(1).unsqueeze(-1)
-        # barycentric coordinates of each point x_m wrt all triangles
-        x_barycentric_all = (self.inv_triangles_barycentric_mat @ x_barycentric_tensor).squeeze(-1)
-
-        # check triangle where point x is (all barycentric coordinates >= 0).
-        mask = torch.all((x_barycentric_all >= 0), dim=-1)
-        inside_mask = torch.any((mask == True), dim=1)
-
-        # get barycentric coordinates wrt triangle in which it is located.
-        x_barycentric = x_barycentric_all[mask]
-        triangle_idx = torch.argmax(mask.to(torch.int32), 1)
-        assert triangle_idx.size() == (x.size(0),)
-
-        return triangle_idx, inside_mask
-
-
-
-    def planes_function(self, x):
-        """ """
-        triangle_idx, inside_mask = self.check_my_triangle(x)
-
-        affine_coeff = torch.zeros(x.size(0), 3)
-        triangle_idx_in = triangle_idx[inside_mask]
-        affine_coeff_in = self.affine_coeff[triangle_idx_in] # size (m, )
-        al1, al2, dl = affine_coeff_in[:, 0], affine_coeff_in[:, 1], affine_coeff_in[:, 2]
-
-        x_values = torch.zeros(x.size(0))
-        x_in = x[inside_mask]
-        x_values[inside_mask] = al1*x_in[:, 0] + al2*x_in[:, 1] + dl # z = x1*a1' + x2*a2' + d'
-        x_values[~inside_mask] = self.evaluate_linear(x[~inside_mask])
-
-        return x_values
-
-
-
-    def evaluate_linear(self, x_std):
-        """ Evaluate linear term on x_std
-        """
-        return (x_std * self.a.view(1, 2)).sum(1) + self.b
-
-
-
-    def add_noise_to_values(self, values):
-        """ """
-        if self.verbose:
-            print(f'Adding noise of standard deviation = {self.noise_std}')
-        self.snr = htv_utils.compute_snr(values, self.noise_std)
-        if not np.allclose(self.noise_std, 0.):
-            noise = torch.empty_like(values).normal_(std=self.noise_std)
-            return values + noise
+        if x_norm < y_norm:
+            vert = vert * x_norm
         else:
-            return values
+            vert = vert * y_norm
 
-
+        return vert
 
     def get_data_boundaries(self, hw_ratio=math.sqrt(3), pad=0.1):
         """ Get the data boundaries in standard coordinates for data
         (pad distance from boundary)
-        in centered rectangular region with a specified height/width ratio, so as
-        to maximize occupied space within the pad-interior lattice.
+        in centered rectangular region with a specified height/width ratio,
+        so as to maximize occupied space within the pad-interior lattice.
 
         Takes into account geometry of hexagonal lattice:
         if hw_ratio > math.sqrt(3), the data touches the upper and bottom
@@ -513,28 +420,18 @@ class Data():
         Returns:
             tuple (x_min, x_max, y_min, y_max)
         """
-        assert np.allclose(self.lat.lsize * self.lat.h, 1.)
-        if not self.lat.is_hexagonal:
-            raise ValueError('Cannot use this method with non-hexagonal '
-                            'lattices. Please set data boundaries manually...')
+        # requires that lattice is hexagonal and lsize*h = 1 (enforced)
+        bottom_right_std = Lattice.bottom_right_std
 
-        # right bottom interior lattice point in lattice coordinates
-        bottom_right_lat = \
-            torch.tensor([[self.lat.lmax, self.lat.lmin]])
-
-        # standard coordinates
-        bottom_right_std = \
-            self.lat.lattice_to_standard(bottom_right_lat.float()).squeeze()
-
-        if hw_ratio > math.sqrt(3): # from geometry maximize space usage
+        if hw_ratio > math.sqrt(3):  # from geometry maximize space usage
             y_min = bottom_right_std[1]
-            x_min = y_min * (1./hw_ratio)
+            x_min = y_min * (1. / hw_ratio)
         else:
-            a = (bottom_right_std[0]*2) / (1 + hw_ratio*math.sqrt(3)/3)
+            a = (bottom_right_std[0] * 2) / (1 + hw_ratio * math.sqrt(3) / 3)
             x_min = -a
             y_min = x_min * hw_ratio
 
-        x_min, y_min = x_min+pad, y_min+pad
+        x_min, y_min = x_min + pad, y_min + pad
         x_max, y_max = -x_min, -y_min
 
         return x_min.item(), y_min.item(), x_max.item(), y_max.item()

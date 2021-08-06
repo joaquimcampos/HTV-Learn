@@ -1,2 +1,2 @@
-from models.fcnet2d import *
-from models.deepfcnet2d import *
+from models.gelufcnet2d import GELUfcNet2D
+from models.relufcnet2d import ReLUfcNet2D

@@ -1,7 +1,4 @@
+data/*
+!data/*.obj
 __pycache__/
-*figs*
-*figures*
-*output*
-*tmp*
-pywavefront.py
-*face_obj*
+output/
