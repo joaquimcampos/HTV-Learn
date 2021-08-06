@@ -3,7 +3,7 @@ import numpy as np
 import odl
 from odl.operator.tensor_ops import MatrixOperator
 
-from operators import Operators
+from htvlearn.operators import Operators
 
 
 class Algorithm():

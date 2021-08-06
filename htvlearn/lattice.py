@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 import warnings
 
-from grid import Grid
+from htvlearn.grid import Grid
 
 
 class Lattice():

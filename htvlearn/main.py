@@ -2,11 +2,11 @@
 
 import argparse
 
-from htv_manager import HTVManager
-from nn_manager import NNManager
-from rbf_manager import RBFManager
-from htv_utils import ArgCheck, assign_structure_recursive
-from struct_default_values import structure, default_values
+from htvlearn.htv_manager import HTVManager
+from htvlearn.nn_manager import NNManager
+from htvlearn.rbf_manager import RBFManager
+from htvlearn.htv_utils import ArgCheck, assign_structure_recursive
+from htvlearn.struct_default_values import structure, default_values
 
 
 def get_arg_parser():

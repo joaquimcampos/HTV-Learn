@@ -1,8 +1,8 @@
 import plotly.figure_factory as ff
 from plotly.subplots import make_subplots
 
-from delaunay import Delaunay
-from plots.base_plot import BasePlot
+from htvlearn.delaunay import Delaunay
+from htvlearn.plots.base_plot import BasePlot
 
 
 class Plot(BasePlot):

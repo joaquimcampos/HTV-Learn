@@ -6,13 +6,12 @@ import os
 import json
 from contextlib import contextmanager
 
-from lattice import Lattice
-from master_project import MasterProject
-from nn_manager import NNManager
-from rbf_manager import RBFManager
-from htv_manager import HTVManager
-
-import htv_utils
+from htvlearn.lattice import Lattice
+from htvlearn.master_project import MasterProject
+from htvlearn.nn_manager import NNManager
+from htvlearn.rbf_manager import RBFManager
+from htvlearn.htv_manager import HTVManager
+from htvlearn.htv_utils import compute_mse_psnr, get_sigma_from_eps
 
 
 @contextmanager
@@ -58,12 +57,12 @@ def print_model(args):
             manager = RBFManager(params, write=False)
             data_obj = manager.data
             output = manager.forward_data(data_obj.test['input'])
-            test_mse, _ = htv_utils.compute_mse_psnr(data_obj.test['values'],
-                                                     output)
+            test_mse, _ = compute_mse_psnr(data_obj.test['values'],
+                                           output)
 
             output_train = manager.forward_data(data_obj.train['input'])
-            train_mse, _ = htv_utils.compute_mse_psnr(data_obj.train['values'],
-                                                      output_train)
+            train_mse, _ = compute_mse_psnr(data_obj.train['values'],
+                                            output_train)
 
             if ckpt['htv_log']:
                 htv = RBFManager.read_htv_log(ckpt['htv_log'])
@@ -77,13 +76,13 @@ def print_model(args):
             output_test = \
                 manager.forward_data(lattice_obj, data_obj.test['input'])
             data_obj.test['predictions'] = output_test
-            test_mse, _ = htv_utils.compute_mse_psnr(data_obj.test['values'],
-                                                     output_test)
+            test_mse, _ = compute_mse_psnr(data_obj.test['values'],
+                                           output_test)
 
             output_train = manager.forward_data(lattice_obj,
                                                 data_obj.train['input'])
-            train_mse, _ = htv_utils.compute_mse_psnr(data_obj.train['values'],
-                                                      output_train)
+            train_mse, _ = compute_mse_psnr(data_obj.train['values'],
+                                            output_train)
 
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]
@@ -102,7 +101,7 @@ def print_model(args):
     print('Exact HTV : {:.2f}'.format(exact_htv))
     if params['method'] == 'rbf':
         print('sigma : {:.2E}'.format(
-            htv_utils.get_sigma_from_eps(params["rbf"]["eps"])))
+            get_sigma_from_eps(params["rbf"]["eps"])))
 
 
 if __name__ == "__main__":

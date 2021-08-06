@@ -4,8 +4,8 @@ import argparse
 import torch
 import numpy as np
 
-from delaunay import Delaunay
-from plots.plot_cpwl import Plot
+from htvlearn.delaunay import Delaunay
+from htvlearn.plots.plot_cpwl import Plot
 
 
 def generate_cpwl(args):

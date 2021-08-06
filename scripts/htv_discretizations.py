@@ -5,9 +5,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from delaunay import Delaunay
-from data import SimpleJunction, AnotherJunction, DistortedBoxSpline, RealData
-from htv_utils import add_date_to_filename
+from htvlearn.delaunay import Delaunay
+from htvlearn.data import (
+    SimpleJunction,
+    AnotherJunction,
+    DistortedBoxSpline,
+    RealData
+)
+from htvlearn.htv_utils import add_date_to_filename
 
 
 def htv_discretizations(args):

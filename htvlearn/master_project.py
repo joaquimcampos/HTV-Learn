@@ -4,13 +4,12 @@ import sys
 import glob
 import git
 import torch
-
-from data import Data
-from htv_utils import flatten_structure, dict_recursive_merge
-from htv_utils import json_load, json_dump
 import numpy as np
-
 from abc import ABC, abstractproperty, abstractmethod
+
+from htvlearn.data import Data
+from htvlearn.htv_utils import flatten_structure, dict_recursive_merge
+from htvlearn.htv_utils import json_load, json_dump
 
 
 class MasterProject(ABC):

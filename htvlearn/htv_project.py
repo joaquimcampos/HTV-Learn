@@ -1,8 +1,8 @@
 import os
 
-from master_project import MasterProject
-from lattice import Lattice
-from htv_utils import add_date_to_filename
+from htvlearn.master_project import MasterProject
+from htvlearn.lattice import Lattice
+from htvlearn.htv_utils import add_date_to_filename
 
 
 class HTVProject(MasterProject):

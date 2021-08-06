@@ -2,9 +2,12 @@ import torch
 import numpy as np
 import scipy.spatial
 
-from base_cpwl import BaseCPWL
-from grid import Grid
-import hessian
+from htvlearn.base_cpwl import BaseCPWL
+from htvlearn.grid import Grid
+from htvlearn.hessian import (
+    get_finite_second_diff_Hessian,
+    get_exact_grad_Hessian
+)
 
 
 class Delaunay(BaseCPWL):
@@ -398,7 +401,7 @@ class Delaunay(BaseCPWL):
     def get_lefkimiattis_HTV(self, p=1, h=0.001):
         """ """
         grid = self.get_grid(h=h)
-        Hess = hessian.get_finite_second_diff_Hessian(grid, self.evaluate)
+        Hess = get_finite_second_diff_Hessian(grid, self.evaluate)
 
         # schatten-p-norm -> sum
         S = np.linalg.svd(Hess, compute_uv=False, hermitian=True)
@@ -412,7 +415,7 @@ class Delaunay(BaseCPWL):
     def get_lefkimiattis_trace_HTV(self, p=1, h=0.001):
         """ """
         grid = self.get_grid(h=h)
-        Hess = hessian.get_finite_second_diff_Hessian(grid, self.evaluate)
+        Hess = get_finite_second_diff_Hessian(grid, self.evaluate)
 
         # trace -> sum
         points_htv = np.abs(Hess[:, :, 0, 0] + Hess[:, :, 1, 1])
@@ -423,7 +426,7 @@ class Delaunay(BaseCPWL):
     def get_exact_grad_trace_HTV(self, h=0.001):
         """ """
         grid = self.get_grid(h=h)
-        Hess = hessian.get_exact_grad_Hessian(grid, self.compute_grad)
+        Hess = get_exact_grad_Hessian(grid, self.compute_grad)
 
         # trace -> sum
         points_htv = np.abs(Hess[:, :, 0, 0] + Hess[:, :, 1, 1])
@@ -434,7 +437,7 @@ class Delaunay(BaseCPWL):
     def get_exact_grad_schatten_HTV(self, p=1, h=0.001):
         """ """
         grid = self.get_grid(h=h)
-        Hess = hessian.get_exact_grad_Hessian(grid, self.compute_grad)
+        Hess = get_exact_grad_Hessian(grid, self.compute_grad)
 
         # schatten-p-norm -> sum
         S = np.linalg.svd(Hess, compute_uv=False, hermitian=False)

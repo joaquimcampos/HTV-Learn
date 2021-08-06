@@ -5,11 +5,11 @@ import os
 import glob
 import json
 
-from master_project import MasterProject
-from nn_manager import NNManager
-from rbf_manager import RBFManager
-from htv_manager import HTVManager
-from htv_utils import ArgCheck, json_load
+from htvlearn.master_project import MasterProject
+from htvlearn.nn_manager import NNManager
+from htvlearn.rbf_manager import RBFManager
+from htvlearn.htv_manager import HTVManager
+from htvlearn.htv_utils import ArgCheck, json_load
 
 
 def get_same_train_mse(args):

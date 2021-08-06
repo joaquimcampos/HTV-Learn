@@ -2,8 +2,9 @@
 
 import argparse
 import os
-from htv_utils import json_load, json_dump
 import collections
+
+from htvlearn.htv_utils import json_load, json_dump
 
 
 def sort_results_json(args):

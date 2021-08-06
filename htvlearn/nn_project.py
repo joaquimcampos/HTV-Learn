@@ -4,9 +4,9 @@ import math
 from abc import abstractproperty
 from torch.backends import cudnn
 
-from htv_utils import size_str
-from master_project import MasterProject
-from nn_dataloader import NNDataLoader
+from htvlearn.htv_utils import size_str
+from htvlearn.master_project import MasterProject
+from htvlearn.nn_dataloader import NNDataLoader
 
 
 class NNProject(MasterProject):

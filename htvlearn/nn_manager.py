@@ -5,10 +5,14 @@ import numpy as np
 from functools import partial
 import torch.autograd.functional as AF
 
-import htv_utils
-import hessian
-from models import GELUfcNet2D, ReLUfcNet2D
-from nn_project import NNProject
+from htvlearn.htv_utils import compute_mse_psnr
+from htvlearn.models import GELUfcNet2D, ReLUfcNet2D
+from htvlearn.nn_project import NNProject
+from htvlearn.hessian import (
+    get_exact_grad_Hessian,
+    get_exact_Hessian,
+    get_finite_second_diff_Hessian
+)
 
 #########################################################################
 # MANAGER
@@ -262,10 +266,10 @@ class NNManager(NNProject):
         if self.params['htv_mode'] == 'exact_differential':
             grid = self.data.cpwl.get_grid(h=0.01)
             if self.params['net_model'] == 'relufcnet2d':
-                Hess = hessian.get_exact_grad_Hessian(
+                Hess = get_exact_grad_Hessian(
                     grid, partial(self.differentiate_func, 'jacobian'))
             else:
-                Hess = hessian.get_exact_Hessian(
+                Hess = get_exact_Hessian(
                     grid, partial(self.differentiate_func, 'hessian'))
 
             htv['exact_differential'] = self.get_htv_from_Hess(Hess,
@@ -275,7 +279,7 @@ class NNManager(NNProject):
         elif self.params['htv_mode'] == 'finite_diff_differential':
             grid = self.data.cpwl.get_grid(h=0.0002)
             with torch.no_grad():
-                Hess = hessian.get_finite_second_diff_Hessian(
+                Hess = get_finite_second_diff_Hessian(
                     grid, self.evaluate_func)
 
             htv['finite_diff_differential'] = self.get_htv_from_Hess(Hess,
@@ -334,7 +338,7 @@ class NNManager(NNProject):
 
         loss = running_loss / total
         # sanity check
-        mse, _ = htv_utils.compute_mse_psnr(values.cpu(), predictions.cpu())
+        mse, _ = compute_mse_psnr(values.cpu(), predictions.cpu())
         assert np.allclose(mse, loss), \
             '(mse: {:.7f}, loss: {:.7f})'.format(mse, loss)
 

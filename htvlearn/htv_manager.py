@@ -3,11 +3,11 @@
 import torch
 import numpy as np
 
-from htv_project import HTVProject
+from htvlearn.htv_project import HTVProject
 from algorithm import Algorithm
-from operators import Operators
-import hessian
-import htv_utils
+from htvlearn.operators import Operators
+from htvlearn.hessian import get_finite_second_diff_Hessian
+from htvlearn.htv_utils import compute_mse_psnr
 
 
 class HTVManager(HTVProject):
@@ -76,8 +76,7 @@ class HTVManager(HTVProject):
             # compute HTV via finite differences in data region
             h = 0.0002
             grid = self.data.cpwl.get_grid(h=h)
-            Hess = hessian.get_finite_second_diff_Hessian(
-                grid, self.evaluate_func)
+            Hess = get_finite_second_diff_Hessian(grid, self.evaluate_func)
 
             points_htv = np.abs(Hess[:, :, 0, 0] + Hess[:, :, 1, 1])
             htv = (points_htv * h * h).sum()
@@ -93,7 +92,7 @@ class HTVManager(HTVProject):
             data_dict['predictions'] = output
 
             # compute mse
-            mse, _ = htv_utils.compute_mse_psnr(data_dict['values'], output)
+            mse, _ = compute_mse_psnr(data_dict['values'], output)
             self.update_json('_'.join([mode, 'mse']), mse)
             print(f'{mode} mse  : {mse}')
 

@@ -2,9 +2,9 @@
 
 import argparse
 
-from data import Data
-from plots.plot_cpwl import Plot
-from htv_utils import ArgCheck
+from htvlearn.data import Data
+from htvlearn.plots.plot_cpwl import Plot
+from htvlearn.htv_utils import ArgCheck
 
 
 def plot_data(args):

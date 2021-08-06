@@ -6,10 +6,10 @@ import time
 import datetime
 import json
 
-from rbf_project import RBFProject
-from rbf import RBF
-import hessian
-import htv_utils
+from htvlearn.rbf_project import RBFProject
+from htvlearn.rbf import RBF
+from htvlearn.hessian import get_finite_second_diff_Hessian
+from htvlearn.htv_utils import compute_mse_psnr
 
 
 class RBFManager(RBFProject):
@@ -36,8 +36,8 @@ class RBFManager(RBFProject):
         self.htv_dict = {}
 
         output = self.forward_data(self.data.train['input'])
-        mse, _ = htv_utils.compute_mse_psnr(self.data.train['values'].cpu(),
-                                            output.cpu())
+        mse, _ = compute_mse_psnr(self.data.train['values'].cpu(),
+                                  output.cpu())
         self.update_json('train_mse', mse)
         print(f'Train mse : {mse}')
 
@@ -89,7 +89,7 @@ class RBFManager(RBFProject):
     def compute_htv(self):
         """ """
         grid = self.data.cpwl.get_grid(h=self.params['htv_grid'])
-        Hess = hessian.get_finite_second_diff_Hessian(grid, self.evaluate_func)
+        Hess = get_finite_second_diff_Hessian(grid, self.evaluate_func)
 
         S = np.linalg.svd(Hess, compute_uv=False, hermitian=True)
         assert S.shape == (*Hess.shape[0:2], 2)
@@ -111,7 +111,7 @@ class RBFManager(RBFProject):
             data_dict['predictions'] = output
 
             # compute mse
-            mse, _ = htv_utils.compute_mse_psnr(data_dict['values'], output)
+            mse, _ = compute_mse_psnr(data_dict['values'], output)
             self.update_json('_'.join([mode, 'mse']), mse)
             print(f'{mode} mse  : {mse}')
 

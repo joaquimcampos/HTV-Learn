@@ -1,7 +1,7 @@
 import os
 
-from master_project import MasterProject
-from htv_utils import add_date_to_filename
+from htvlearn.master_project import MasterProject
+from htvlearn.htv_utils import add_date_to_filename
 
 
 class RBFProject(MasterProject):

@@ -1,5 +1,5 @@
 import torch
-from htv_utils import frange
+from htvlearn.htv_utils import frange
 
 
 class Grid:

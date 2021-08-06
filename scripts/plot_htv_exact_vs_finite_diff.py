@@ -5,9 +5,9 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
-from master_project import MasterProject
-from nn_manager import NNManager
-from htv_utils import add_date_to_filename
+from htvlearn.master_project import MasterProject
+from htvlearn.nn_manager import NNManager
+from htvlearn.htv_utils import add_date_to_filename
 
 
 def plot_htv_exact_vs_finite_diff(args):

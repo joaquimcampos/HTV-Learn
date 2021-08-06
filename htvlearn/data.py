@@ -4,9 +4,9 @@ import numpy as np
 import math
 import scipy
 
-from lattice import Lattice
-from delaunay import Delaunay
-from grid import Grid
+from htvlearn.lattice import Lattice
+from htvlearn.delaunay import Delaunay
+from htvlearn.grid import Grid
 
 
 class Hex():

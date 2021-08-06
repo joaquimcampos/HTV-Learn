@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
+import os
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-import os
 
-from master_project import MasterProject
-from nn_manager import NNManager
-from rbf_manager import RBFManager
-from htv_utils import add_date_to_filename, get_sigma_from_eps
+from htvlearn.master_project import MasterProject
+from htvlearn.nn_manager import NNManager
+from htvlearn.rbf_manager import RBFManager
+from htvlearn.htv_utils import add_date_to_filename, get_sigma_from_eps
 
 
 lw = 1  # linewidth
