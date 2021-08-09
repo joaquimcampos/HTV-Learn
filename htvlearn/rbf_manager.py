@@ -43,14 +43,14 @@ class RBFManager(RBFProject):
 
         if not self.params['no_htv']:
             print('\nComputing Hessian...')
-            self.htv_dict['finite_diff_differential'] = self.compute_htv()
-            print(
-                'HTV dict :',
-                json.dumps(self.htv_dict['finite_diff_differential'],
-                           indent=4,
-                           sort_keys=False))
+            self.htv_dict = self.compute_htv()
+            print('HTV dict :',
+                  json.dumps(self.htv_dict,
+                             indent=4,
+                             sort_keys=False))
             print('Exact HTV : {:.2f}'.format(self.data.cpwl.get_exact_HTV()))
             print('Finished.')
+            self.update_json('htv', self.htv_dict)
 
         self.evaluate_results()
 
@@ -131,7 +131,12 @@ class RBFManager(RBFProject):
 
         # e.g. htv_log = {'finite_diff_differential': {'1': htv_1, '2': htv_2}}
         # dictio is a dictionary containing 'p': htv_p
-        dictio = htv_log['finite_diff_differential']
+        # TODO: Backward compatibility.
+        # Afterwards, delete finite_diff_differential
+        if 'finite_diff_differential' in htv_log:
+            dictio = htv_log['finite_diff_differential']
+        else:
+            dictio = htv_log
 
         assert isinstance(dictio, dict)
         # p in schatten-p norms

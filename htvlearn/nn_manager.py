@@ -199,6 +199,7 @@ class NNManager(NNProject):
             print('HTV dict :', self.htv_dict[str(epoch + 1)])
             print('Exact HTV :', self.data.cpwl.get_exact_HTV())
             print('Finished.')
+            self.update_json('htv', self.htv_dict[str(epoch + 1)])
         #####
         self.train_loss_dict[str(epoch + 1)] = train_loss
         self.valid_loss_dict[str(epoch + 1)] = valid_loss
