@@ -45,7 +45,7 @@ def nn_write_htv_to_json(args):
 
     json_dump(results_dict, args.json_file)
 
-    print('=> Results with htv written to {args.json_file}.')
+    print(f'=> Results with htv written to {args.json_file}.')
 
 
 if __name__ == "__main__":
