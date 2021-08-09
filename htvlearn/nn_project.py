@@ -87,17 +87,6 @@ class NNProject(MasterProject):
         """ Should return valid loss log accross epochs """
         pass
 
-    @property
-    def info_list(self):
-        """ """
-        return ['train_mse', 'valid_mse', 'test_mse']
-
-    @property
-    def sorting_key(self):
-        """ Key for sorting models in json file.
-        """
-        return 'test_mse'
-
     def train_log_step(self, epoch, batch_idx, losses_dict):
         """
         Args:

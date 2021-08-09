@@ -82,16 +82,16 @@ class MasterProject(ABC):
         """ Should return htv log """
         pass
 
-    @abstractproperty
+    @property
+    def info_list(self):
+        """ Should return list of info to log on json file """
+        return ['train_mse', 'valid_mse', 'test_mse', 'htv']
+
+    @property
     def sorting_key(self):
         """ Key for sorting models in json file.
         """
-        pass
-
-    @abstractproperty
-    def info_list(self):
-        """ Should return list of info to log on json file """
-        pass
+        return 'test_mse'
 
     def init_json(self):
         """ Init json file for train/test results.

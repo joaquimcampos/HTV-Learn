@@ -11,17 +11,6 @@ class RBFProject(MasterProject):
         """
         super().__init__(params, write=write)
 
-    @property
-    def info_list(self):
-        """ """
-        return ['train_mse', 'valid_mse', 'test_mse']
-
-    @property
-    def sorting_key(self):
-        """ Key for sorting models in json file.
-        """
-        return 'test_mse'
-
     def save_to_ckpt(self):
         """
         Save algorithm lattice history and other relevant

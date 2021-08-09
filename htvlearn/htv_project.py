@@ -15,15 +15,7 @@ class HTVProject(MasterProject):
     @property
     def info_list(self):
         """ """
-        return [
-            'train_mse', 'valid_mse', 'test_mse', 'htv', 'percentage_nonzero'
-        ]
-
-    @property
-    def sorting_key(self):
-        """ Key for sorting models in json file.
-        """
-        return 'test_mse'
+        return super().info_list + ['percentage_nonzero']
 
     def save_to_ckpt(self, lattice_dict):
         """
