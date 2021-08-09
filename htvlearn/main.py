@@ -21,47 +21,36 @@ def get_arg_parser():
         '--method',
         choices=['htv', 'neural_net', 'rbf'],
         type=str,
-        help='Method to solve problem. '
-             f'(default: {default_values["method"]})')
-
-    parser.add_argument(
-        '--log_dir',
-        metavar='[STR]',
-        type=str,
-        help='Directory for saving results. '
-             f'(default: {default_values["log_dir"]})')
-
-    parser.add_argument(
-        '--model_name',
-        metavar='[STR]',
-        type=str,
-        help=f'(default: {default_values["model_name"]})')
+        help='Method used for learning. '
+        f'(default: {default_values["method"]})')
 
     parser.add_argument(
         '--lmbda',
         metavar='[FLOAT,>=0]',
         type=ArgCheck.nn_float,
         help='Regularization weight for HTV/RBF. '
-             f'(default: {default_values["lmbda"]})')
-
-    parser.add_argument(
-        '--htv_mode',
-        type=str,
-        choices=['finite_diff_differential', 'exact_differential'],
-        help='How to compute gradients for HTV. '
-             f'(default: {default_values["htv_mode"]})')
+        f'(default: {default_values["lmbda"]})')
 
     parser.add_argument(
         '--no_htv',
         action='store_true',
         help='If True, do not compute HTV of model. '
-             f'(default: {default_values["no_htv"]})')
+        f'(default: {default_values["no_htv"]})')
+
+    # logs-related
+    parser.add_argument(
+        '--log_dir',
+        metavar='[STR]',
+        type=str,
+        help='Directory for saving results. '
+        f'(default: {default_values["log_dir"]})')
 
     parser.add_argument(
-        '--verbose',
-        '-v',
-        action='store_true',
-        help=f'Print more info. (default: {default_values["verbose"]})')
+        '--model_name',
+        metavar='[STR]',
+        type=str,
+        help='Directory under --log_dir where checkpoints are saved. '
+        f'(default: {default_values["model_name"]})')
 
     # data
     dataset_choices = {
@@ -71,73 +60,60 @@ def get_arg_parser():
         '--dataset_name',
         choices=dataset_choices,
         type=str,
-        help=f'(default: {default_values["dataset_name"]})')
+        help='Dataset to train/test on. '
+        f'(default: {default_values["dataset_name"]})')
 
     parser.add_argument(
         '--num_train',
         metavar='[INT>0]',
         type=ArgCheck.p_int,
-        help='number of training samples. '
-             f'(default: {default_values["num_train"]})')
-
-    parser.add_argument(
-        '--valid_fraction',
-        metavar='[FLOAT,(0,1)]',
-        type=ArgCheck.frac_float,
-        help='Fraction of train samples to use for validation. '
-             f'(default: {default_values["valid_fraction"]})')
+        help='Number of training samples. '
+        f'(default: {default_values["num_train"]})')
 
     parser.add_argument(
         '--test_as_valid',
         action='store_true',
-        help='Use test as validation. '
-             f'(default: {default_values["test_as_valid"]})')
+        help='Use test set as validation. '
+        f'(default: {default_values["test_as_valid"]})')
 
     parser.add_argument(
         '--noise_ratio',
         metavar='[FLOAT,>0]',
         type=ArgCheck.nn_float,
         help='Add random noise sampled from zero-mean '
-             'normal distribution with std = noise_ratio * max_z. '
-             f'(default: {default_values["noise_ratio"]})')
+        'normal distribution with std = noise_ratio * max_z. '
+        f'(default: {default_values["noise_ratio"]})')
 
     parser.add_argument(
         '--seed',
         metavar='INT',
         type=int,
         help='Seed for random generation of dataset. '
-             'If negative, set no seed. '
-             f'(default: {default_values["seed"]})')
+        'If negative, set no seed. '
+        f'(default: {default_values["seed"]})')
 
-    # lattice
+    # Lattice
     parser.add_argument(
         '--lsize',
         metavar='[INT,>0]',
         type=ArgCheck.p_int,
         help=f'Lattice size. (default: {default_values["lsize"]})')
 
-    # algorithm
-    parser.add_argument(
-        '--num_iter',
-        metavar='[INT,>0]',
-        type=ArgCheck.p_int,
-        help='Number of iterations (grid divisions). '
-             f'(default: {default_values["num_iter"]})')
-
+    # HTV minimization algorithm
     parser.add_argument(
         '--admm_iter',
         metavar='[INT,>0]',
         type=ArgCheck.p_int,
         help='Number of admm iterations. '
-             f'(default: {default_values["admm_iter"]})')
+        f'(default: {default_values["admm_iter"]})')
 
     parser.add_argument(
         '--sigma_rule',
         type=str,
         choices=['constant', 'same', 'inverse'],
         help='Rule to set step size for g proximal in admm; '
-             'either constant or same or inverse of lmbda. '
-             f'(default: {default_values["sigma_rule"]})')
+        'either constant or same or inverse of lmbda. '
+        f'(default: {default_values["sigma_rule"]})')
 
     # RBF
     parser.add_argument(
@@ -145,52 +121,57 @@ def get_arg_parser():
         metavar='[FLOAT>0]',
         type=ArgCheck.p_float,
         help='RBF shape parameter (higher -> more localized). '
-             f'(default: {default_values["eps"]})')
-
-    parser.add_argument(
-        '--htv_grid',
-        metavar='[FLOAT,>=0]',
-        type=ArgCheck.nn_float,
-        help='Grid size for computing htv for RBF. '
-             f'(default: {default_values["htv_grid"]})')
+        f'(default: {default_values["eps"]})')
 
     # neural net
-    # model
     parser.add_argument(
         '--net_model',
         type=str,
         choices=['relufcnet2d', 'gelufcnet2d'],
         help='Neural network model to train. '
-             f'(default: {default_values["net_model"]})')
+        f'(default: {default_values["net_model"]})')
 
     parser.add_argument(
-        '--hidden',
+        '--htv_mode',
+        type=str,
+        choices=['finite_diff_differential', 'exact_differential'],
+        help='Mode for computing gradients for HTV. '
+        'Only relevant if --no_htv is not set. '
+        f'(default: {default_values["htv_mode"]})')
+
+    parser.add_argument(
+        '--device',
+        type=str,
+        choices=['cpu', 'cuda:0'],
+        help=f'(default: {default_values["device"]})')
+
+    parser.add_argument(
+        '--num_epochs',
         metavar='[INT,>0]',
         type=ArgCheck.p_int,
-        help='Number of hidden neurons per layer. '
-             f'(default: {default_values["hidden"]})')
+        help='Number of training epochs. '
+        f'(default: {default_values["num_epochs"]})')
 
     parser.add_argument(
         '--num_hidden_layers',
         metavar='[INT,>0]',
         type=ArgCheck.p_int,
         help='Number of hidden layers. '
-             f'(default: {default_values["num_hidden_layers"]})')
+        f'(default: {default_values["num_hidden_layers"]})')
 
-    # dataloader
     parser.add_argument(
-        '--batch_size',
+        '--num_hidden_neurons',
         metavar='[INT,>0]',
         type=ArgCheck.p_int,
-        help='Batch size for training. '
-             f'(default: {default_values["batch_size"]})')
+        help='Number of hidden neurons per layer. '
+        f'(default: {default_values["num_hidden_neurons"]})')
 
     parser.add_argument(
         '--weight_decay',
         metavar='[FLOAT,>0]',
         type=ArgCheck.p_float,
         help='Weight decay to be applied. '
-             f'(default: {default_values["weight_decay"]})')
+        f'(default: {default_values["weight_decay"]})')
 
     parser.add_argument(
         '--milestones',
@@ -198,35 +179,39 @@ def get_arg_parser():
         nargs='+',
         type=ArgCheck.p_int,
         help='List of epochs in which learning rate is decreased by 10. '
-             f'(default: {default_values["milestones"]})')
-
-    parser.add_argument(
-        '--num_epochs',
-        metavar='[INT,>0]',
-        type=ArgCheck.p_int,
-        help='Number of training epochs. '
-             f'(default: {default_values["num_epochs"]})')
+        f'(default: {default_values["milestones"]})')
 
     parser.add_argument(
         '--log_step',
         metavar='[INT,>0]',
         type=ArgCheck.p_int,
-        help='If None, done at every epoch. '
-             f'(default: {default_values["log_step"]})')
+        help='Train log step in number of batches. '
+        'If None, done at every epoch. '
+        f'(default: {default_values["log_step"]})')
 
     parser.add_argument(
         '--valid_log_step',
         metavar='[INT]',
         type=int,
-        help='If None, done halfway and at the end of training. '
-             'If negative, done at every epoch. '
-             f'(default: {default_values["valid_log_step"]})')
+        help='Train log step in number of batches. '
+        'If None, done halfway and at the end of training. '
+        'If negative, done at every epoch. '
+        f'(default: {default_values["valid_log_step"]})')
 
+    # dataloader
     parser.add_argument(
-        '--device',
-        type=str,
-        choices=['cpu', 'cuda:0'],
-        help=f'(default: {default_values["device"]})')
+        '--batch_size',
+        metavar='[INT,>0]',
+        type=ArgCheck.p_int,
+        help='Batch size for training. '
+        f'(default: {default_values["batch_size"]})')
+
+    # verbose output
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        action='store_true',
+        help=f'Print more info. (default: {default_values["verbose"]})')
 
     return parser
 

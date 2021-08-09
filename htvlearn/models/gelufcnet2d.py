@@ -15,16 +15,21 @@ class GELUfcNet2D(nn.Module):
           -> fchidden -> N x N (x num_hidden_layers)
           -> fclast -> N x 1
     """
-    def __init__(self, hidden=50, num_hidden_layers=5, **kwargs):
+    def __init__(self,
+                 num_hidden_layers=5,
+                 num_hidden_neurons=50,
+                 **kwargs):
 
         super().__init__()
-        self.hidden = hidden  # number of hidden neurons
-        self.num_hidden_layers = num_hidden_layers  # number of hidden layers
+        self.num_hidden_layers = num_hidden_layers
+        self.num_hidden_neurons = num_hidden_neurons
 
-        self.fc1 = nn.Linear(2, hidden)
+        self.fc1 = nn.Linear(2, num_hidden_neurons)
         self.fchidden = nn.ModuleList(
-            [nn.Linear(hidden, hidden) for i in range(num_hidden_layers - 1)])
-        self.fclast = nn.Linear(hidden, 1)
+            [nn.Linear(num_hidden_neurons, num_hidden_neurons)
+             for i in range(num_hidden_layers - 1)]
+        )
+        self.fclast = nn.Linear(num_hidden_neurons, 1)
 
         self.num_params = self.get_num_params()
 
