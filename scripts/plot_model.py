@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
-import os
-import sys
 import argparse
 import json
-from contextlib import contextmanager
 
 from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
@@ -13,17 +10,11 @@ from htvlearn.htv_manager import HTVManager
 from htvlearn.delaunay import Delaunay
 from htvlearn.lattice import Lattice
 from htvlearn.plots.plot_cpwl import Plot
-from htvlearn.htv_utils import compute_mse_psnr, get_sigma_from_eps
-
-
-@contextmanager
-def silence_stdout():
-    new_target = open(os.devnull, "w")
-    old_target, sys.stdout = sys.stdout, new_target
-    try:
-        yield new_target
-    finally:
-        sys.stdout = old_target
+from htvlearn.htv_utils import (
+    compute_mse_psnr,
+    get_sigma_from_eps,
+    silence_stdout
+)
 
 
 def plot_model(args):

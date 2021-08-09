@@ -1,27 +1,18 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
-import os
 import json
-from contextlib import contextmanager
 
 from htvlearn.lattice import Lattice
 from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
 from htvlearn.htv_manager import HTVManager
-from htvlearn.htv_utils import compute_mse_psnr, get_sigma_from_eps
-
-
-@contextmanager
-def silence_stdout():
-    new_target = open(os.devnull, "w")
-    old_target, sys.stdout = sys.stdout, new_target
-    try:
-        yield new_target
-    finally:
-        sys.stdout = old_target
+from htvlearn.htv_utils import (
+    compute_mse_psnr,
+    get_sigma_from_eps,
+    silence_stdout
+)
 
 
 def print_model(args):

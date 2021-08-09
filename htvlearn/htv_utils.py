@@ -1,7 +1,10 @@
+import os
+import sys
 import argparse
 import copy
 import math
 from datetime import datetime
+from contextlib import contextmanager
 
 import numpy as np
 import json
@@ -293,3 +296,13 @@ def get_sigma_from_eps(eps):
     """ Get sigma (standard deviation) from eps for RBF
     """
     return np.sqrt(1. / (2. * eps))
+
+
+@contextmanager
+def silence_stdout():
+    new_target = open(os.devnull, "w")
+    old_target, sys.stdout = sys.stdout, new_target
+    try:
+        yield new_target
+    finally:
+        sys.stdout = old_target
