@@ -15,7 +15,6 @@ class Algorithm():
                  data_obj,
                  model_name,
                  lmbda,
-                 num_iter=1,
                  admm_iter=100000,
                  sigma_rule='same',
                  verbose=False,
@@ -26,7 +25,6 @@ class Algorithm():
             data_obj:
             model_name:
             lmbda:
-            num_iter:
             admm_iter:
             sigma_rule:
             verbose:
@@ -37,12 +35,12 @@ class Algorithm():
 
         self.model_name = model_name
         self.lmbda = lmbda
-        self.num_iter = num_iter
         self.admm_iter = admm_iter
         self.sigma_rule = sigma_rule
         self.verbose = verbose
 
-        self.niter = min(self.admm_iter, 200000)  # admm iterations step
+        # log_step for admm iterations
+        self.log_step = min(self.admm_iter, 200000)
 
         # verify inputs
         self.input = self.data.train['input']
@@ -101,7 +99,7 @@ class Algorithm():
                                     stack_op,
                                     tau,
                                     sigma,
-                                    self.niter,
+                                    self.log_step,
                                     callback=callback)
 
         # update lattice values with admm result stored in z_odl
@@ -235,16 +233,16 @@ class Algorithm():
         print('\n\nStart multires admm.')
         lattice_dict = self.lat.save('init')
 
-        for i in range(self.num_iter):
+        num_iter = 1  # increase for multiresolution
+        for i in range(num_iter):
 
-            self.admm_iter  # Number of iterations
-            for j in range(0, self.admm_iter // self.niter):
-                print(f'\nsubrun {j}/{self.admm_iter//self.niter-1}:')
+            for j in range(0, self.admm_iter // self.log_step):
+                print(f'\nsubrun {j} / {self.admm_iter // self.log_step - 1}:')
                 self.admm()
 
-            print(f'\n--> admm iteration {i+1}/{self.num_iter} completed.')
+            print(f'\n--> admm iteration {i+1}/{num_iter} completed.')
 
-            if i < self.num_iter - 1:  # don't divide in last iteration
+            if i < num_iter - 1:  # don't divide in last iteration
                 lattice_dict = self.lat.save(f'admm_iteration_{i+1}',
                                              lattice_dict)
                 self.lat.divide_lattice()
