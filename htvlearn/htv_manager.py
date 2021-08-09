@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from htvlearn.htv_project import HTVProject
-from algorithm import Algorithm
+from htvlearn.algorithm import Algorithm
 from htvlearn.operators import Operators
 from htvlearn.hessian import get_finite_second_diff_Hessian
 from htvlearn.htv_utils import compute_mse_psnr
