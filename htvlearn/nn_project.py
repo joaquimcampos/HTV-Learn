@@ -90,7 +90,7 @@ class NNProject(MasterProject):
     @property
     def info_list(self):
         """ """
-        return ['latest_train_mse', 'latest_valid_mse', 'test_mse']
+        return ['train_mse', 'valid_mse', 'test_mse']
 
     @property
     def sorting_key(self):
@@ -110,11 +110,7 @@ class NNProject(MasterProject):
                       self.num_batches['train']),
               end='')
         for key, value in losses_dict.items():
-            print('{}: {:7.9f} | '.format(key, value), end='')
-
-        for key, val in losses_dict.items():
-            info = '_'.join(['latest_train', key])
-            self.update_json(info, val)
+            print('{}: {:.3E} | '.format(key, value), end='')
 
     def valid_log_step(self, losses_dict):
         """
@@ -128,8 +124,7 @@ class NNProject(MasterProject):
             print('{}: {:7.3f} | '.format(key, value), end='')
 
         for key, val in losses_dict.items():
-            info = '_'.join(['latest_valid', key])
-            self.update_json(info, val)
+            self.update_json(key, val)
 
     def ckpt_log_step(self, epoch):
         """ """

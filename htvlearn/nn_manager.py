@@ -169,7 +169,7 @@ class NNManager(NNProject):
                     self.params['log_step'] - 1):
                 mse = (running_loss / self.params['log_step'])
                 self.latest_train_loss = mse
-                losses_dict = {'mse': mse}
+                losses_dict = {'avg. mse': mse}
                 self.train_log_step(epoch, batch_idx, losses_dict)
                 running_loss = 0.  # reset running loss
 
@@ -189,7 +189,8 @@ class NNManager(NNProject):
 
     def validation_step(self, epoch):
         """ """
-        loss = self.evaluate_results(mode='valid')
+        train_loss = self.evaluate_results(mode='train')
+        valid_loss = self.evaluate_results(mode='valid')
 
         #####
         if not self.params['no_htv']:
@@ -199,12 +200,13 @@ class NNManager(NNProject):
             print('Exact HTV :', self.data.cpwl.get_exact_HTV())
             print('Finished.')
         #####
-        self.train_loss_dict[str(epoch + 1)] = self.latest_train_loss
-        self.valid_loss_dict[str(epoch + 1)] = loss
+        self.train_loss_dict[str(epoch + 1)] = train_loss
+        self.valid_loss_dict[str(epoch + 1)] = valid_loss
 
-        print(f'\nvalidation mse : {loss}')
-        losses_dict = {'mse': loss}
+        print(f'\nvalidation mse : {valid_loss}')
 
+        losses_dict = {'train_mse': train_loss,
+                       'valid_mse': valid_loss}
         self.valid_log_step(losses_dict)
         self.ckpt_log_step(epoch)  # save checkpoint
 
