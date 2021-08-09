@@ -88,7 +88,7 @@ class RBFManager(RBFProject):
 
     def compute_htv(self):
         """ """
-        grid = self.data.cpwl.get_grid(h=self.params['htv_grid'])
+        grid = self.data.cpwl.get_grid(h=0.0005)
         Hess = get_finite_second_diff_Hessian(grid, self.evaluate_func)
 
         S = np.linalg.svd(Hess, compute_uv=False, hermitian=True)
