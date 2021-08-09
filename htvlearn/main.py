@@ -9,6 +9,7 @@ from htvlearn.htv_utils import ArgCheck, assign_structure_recursive
 from htvlearn.struct_default_values import structure, default_values
 
 
+# Fix the Acknowledgements (new Grant)
 def get_arg_parser():
     """ Define argument parser """
 
