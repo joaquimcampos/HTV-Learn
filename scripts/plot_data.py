@@ -47,7 +47,7 @@ if __name__ == "__main__":
         choices=dataset_choices,
         type=str,
         default='cut_face_gaps',
-        help='')
+        help=' ')
 
     parser.add_argument(
         '--num_train',
