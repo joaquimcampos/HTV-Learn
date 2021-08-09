@@ -133,12 +133,12 @@ class MasterProject(ABC):
             for key, val in value.items():
                 update = val
                 if isinstance(val, float) or isinstance(val, np.float32):
-                    update = float('{:.3E}'.format(val))
+                    update = float('{:.2E}'.format(val))
                 results_dict[self.params["model_name"]][info][key] = update
         else:
             update = value
             if isinstance(value, float) or isinstance(value, np.float32):
-                update = float('{:.3E}'.format(value))
+                update = float('{:.2E}'.format(value))
             results_dict[self.params["model_name"]][info] = update
 
         # sort in ascending order (reverse=False)
