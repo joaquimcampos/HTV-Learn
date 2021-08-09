@@ -23,9 +23,9 @@ def sort_results_json(args):
     sorted_results_dict = collections.OrderedDict(sorted_results)
 
     path_split = args.json_file.split('/')
-    log_dir, json_file = '/'.join(path_split[:-1]), path_split[-1]
+    log_dir, json_name = '/'.join(path_split[:-1]), path_split[-1]
     sorted_results_json = os.path.join(log_dir,
-                                       f'{args.key}_sorted_' + json_file)
+                                       f'{args.key}_sorted_' + json_name)
 
     json_dump(sorted_results_dict, sorted_results_json)
 
