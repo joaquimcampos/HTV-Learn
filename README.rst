@@ -31,3 +31,9 @@ Acknowledgements
 
 This work was supported in part by the Swiss National Science Foundation under Grant 200020_184646 / 1 and in part by the European Research Council (ERC)
 under Grant 692726-GlobalBioIm.
+
+Logo
+----
+
+The logo rights belong to © Ben Foster 2021.
+You can check his website `here <https://benfostersculpture.com/>`_.
