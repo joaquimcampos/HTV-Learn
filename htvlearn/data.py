@@ -183,41 +183,93 @@ class Data():
     def init_data(self):
         """ """
         if not bool(self.delaunay):
-            if self.dataset_name.startswith('cpwl'):
-                self.delaunay['points'] = \
-                    init_distorted_grid(size_=(3, 3), range_=(-1, 1))
-                self.delaunay['values'] = \
-                    (np.random.rand(self.delaunay['points'].shape[0],) - 0.5)
 
-            elif self.dataset_name.startswith('face'):
+            if self.dataset_name.startswith('pyramid'):
                 self.delaunay['points'], self.delaunay['values'] = \
-                    self.init_face(cut=False)
+                    self.init_pyramid()
 
-            elif self.dataset_name.startswith('cut_face'):
+            elif self.dataset_name.endswith('planes'):
                 self.delaunay['points'], self.delaunay['values'] = \
-                    self.init_face(cut=True)
+                    self.init_planes()  # TODO
+
+            elif 'face' in self.dataset_name:
+                self.delaunay['points'], self.delaunay['values'] = \
+                    self.init_face(cut=True
+                                   if 'cut' in self.dataset_name
+                                   else False)
 
         self.cpwl = Delaunay(points=self.delaunay['points'],
                              values=self.delaunay['values'])
 
-        if not bool(self.test):  # if empty
-            self.test['input'] = self.cpwl.get_grid(h=0.01,
-                                                    to_numpy=False,
-                                                    to_float32=True).x
+        if not bool(self.test):
+            if not self.cpwl.has_rectangular_range:
+                # test set is made of uniformly distributed points
+                # inside the convex hull of cpwl
+                convex_hull_points = \
+                    self.cpwl.tri.points[self.cpwl.convex_hull_points_idx]
+
+                # generate 1000 uniformly distributed convex combination
+                # coefficients
+                coeffs = torch.empty(
+                    (1000, convex_hull_points.shape[0])
+                ).uniform_(0., 1.)
+
+                # make combination convex (divide by sum)
+                coeffs = coeffs / coeffs.sum(dim=1).unsqueeze(-1)
+                assert torch.allclose(
+                    coeffs.sum(dim=1), torch.ones_like(coeffs.sum(dim=1))), \
+                    print(f'coefficients sum up to {coeffs.sum(dim=1)}.')
+
+                self.test['input'] = (coeffs.unsqueeze(-1) *
+                                      convex_hull_points).sum(dim=1)
+                assert self.test['input'].size() == (coeffs.size(0), 2), \
+                    print(f'test input shape {self.test["input"].size()}')
+            else:
+                # test set is sampled on a grid inside the convex hull of cpwl
+                self.test['input'] = self.cpwl.get_grid(h=0.01,
+                                                        to_numpy=False,
+                                                        to_float32=True).x
+
             self.test['values'] = self.cpwl.evaluate(self.test['input'])
 
-        if not bool(self.train):
-            # training/validation data
-            num_train_valid_samples = int(self.num_train)
-            x = torch.empty((num_train_valid_samples, 2))
-            x[:, 0].uniform_(self.delaunay['points'][:, 0].min(),
-                             self.delaunay['points'][:, 0].max())
-            x[:, 1].uniform_(self.delaunay['points'][:, 1].min(),
-                             self.delaunay['points'][:, 1].max())
+            print(f'nb. of test data points : {self.test["input"].size(0)}')
 
-            # split idx for training and validation data
-            split_idx = int(
-                (1 - self.valid_fraction) * num_train_valid_samples)
+            if not bool(self.valid) and self.test_as_valid:
+                self.valid['input'] = self.test['input'].clone()
+                self.valid['values'] = self.test['values'].clone()
+
+        if not bool(self.train):
+            # training set is made of uniformly distributed points
+            # inside the convex hull of cpwl
+            convex_hull_points = \
+                self.cpwl.tri.points[self.cpwl.convex_hull_points_idx]
+
+            # TODO: Make it really uniform
+            # generate num_train_valid_samples uniformly distributed
+            # convex combination coefficients
+            num_train_valid_samples = int(self.num_train)
+            coeffs = torch.empty(
+                (num_train_valid_samples, convex_hull_points.shape[0])
+            ).uniform_(0., 1.)
+
+            # make combination convex (divide by sum)
+            coeffs = coeffs / coeffs.sum(dim=1).unsqueeze(-1)
+            assert torch.allclose(
+                coeffs.sum(dim=1), torch.ones_like(coeffs.sum(dim=1))), \
+                print(f'coefficients sum up to {coeffs.sum(dim=1)}.')
+
+            x = (coeffs.unsqueeze(-1) * convex_hull_points).sum(dim=1)
+            assert x.size() == (coeffs.size(0), 2), \
+                print(f'x shape {x.size()}')
+
+            # training / validation split indices
+            if not self.test_as_valid:
+                split_idx = int((1 - self.valid_fraction) *
+                                num_train_valid_samples)
+            else:
+                # full training set, validation set = test set
+                split_idx = x.size(0)
+
             self.train['input'] = x[0:split_idx]
             self.train['values'] = self.cpwl.evaluate(self.train['input'])
 
@@ -242,18 +294,13 @@ class Data():
                 self.train['values'] = \
                     self.add_noise_to_values(self.train['values'])
 
-            if not bool(self.valid):
-                if self.test_as_valid:
-                    self.valid['input'] = self.test['input'].clone()
-                    self.valid['values'] = self.test['values'].clone()
-                else:
-                    self.valid['input'] = x[(split_idx + 1)::]
-                    self.valid['values'] = \
-                        self.cpwl.evaluate(self.valid['input'])
+            print('nb. of training data points : '
+                  f'{self.train["input"].size(0)}')
 
-        print('\nNumber of training data points : '
-              f'{self.train["input"].size(0)}')
-        print(f'Number of test data points : {self.test["input"].size(0)}')
+            if not bool(self.valid):
+                self.valid['input'] = x[(split_idx + 1)::]
+                self.valid['values'] = \
+                    self.cpwl.evaluate(self.valid['input'])
 
     def add_noise_to_values(self, values):
         """  """
@@ -263,6 +310,47 @@ class Data():
         noise = torch.empty_like(values).normal_(std=noise_std)
 
         return values + noise
+
+    def init_pyramid(self):
+        """ """
+        h = 0.1
+        points = torch.tensor([[2 * h, 0.], [0., 2 * h],
+                               [2 * h, -2 * h], [0., -2 * h],
+                               [-2 * h, 0.], [-2 * h, 2 * h],
+                               [h, 0.], [0., h],
+                               [h, -h], [0., -h],
+                               [-h, 0.], [-h, h],
+                               [0., 0.]])  # last element -> apex
+
+        values = torch.tensor([.1, .1, .1, .1, .1, .1,
+                               .2, .2, .2, .2, .2, .2,
+                               .3])
+
+        if False:
+            # extended pyramid
+            points_ext = torch.tensor([[3 * h, 0.], [0., 3 * h],
+                                       [2.95 * h, -2.85 * h], [0., -3 * h],
+                                       [-3 * h, 0.], [-3 * h, 3 * h]])
+
+            values_ext = torch.tensor([.1, .1, .1, .1, .1, .1])
+
+            points = torch.cat((points, points_ext), dim=0)
+            values = torch.cat((values, values_ext), dim=0)
+
+        points = (Lattice.hexagonal_matrix @ points.t()).t()
+
+        if False:
+            # linear term
+            a, b = torch.tensor([.2, .2]) + torch.tensor([.1])
+            values = values + (points * a.unsqueeze(0)).sum(1) + b
+
+        # training is made of all pyramid vertices except apex
+        self.train['input'] = points[:-1].clone()
+        self.train['values'] = values[:-1].clone()
+        # force validation set to be equal to test set
+        self.test_as_valid = True
+
+        return points.numpy(), values.numpy()
 
     def read_face(self, cut_eps=0.6):
         """

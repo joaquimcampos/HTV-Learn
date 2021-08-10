@@ -54,7 +54,10 @@ def get_arg_parser():
 
     # data
     dataset_choices = {
-        'cpwl', 'face', 'face_gaps', 'cut_face', 'cut_face_gaps'
+        'pyramid',
+        'quad_top_planes',
+        'face',
+        'cut_face_gaps'
     }
     parser.add_argument(
         '--dataset_name',

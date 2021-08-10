@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # data
     dataset_choices = {
-        'cpwl', 'face', 'face_gaps', 'cut_face', 'cut_face_gaps'
+        'face', 'cut_face_gaps', 'pyramid', 'quad_top_planes'
     }
     parser.add_argument(
         '--dataset_name',
