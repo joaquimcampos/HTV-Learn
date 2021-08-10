@@ -30,6 +30,8 @@ class Lattice():
     centers_barycentric_coordinates = Tensor([0.333, 0.333, 0.334])
     # requires that lattice is hexagonal and lsize*h = 1 (both enforced)
     bottom_right_std = Tensor([0.2500, -0.4330])
+    hexagonal_matrix = Tensor([[1., 0.5],
+                               [0., 0.5 * math.sqrt(3)]])
 
     def __init__(self,
                  X_mat=None,
@@ -69,7 +71,7 @@ class Lattice():
         assert C_init in ['zero', 'normal']
 
         h = 1. / lsize
-        X_mat = Tensor([[1., 0.5], [0., 0.5 * math.sqrt(3)]]).mul(h)
+        X_mat = cls.hexagonal_matrix.mul(h)
         C_mat = torch.zeros((lsize + 1, lsize + 1))
         if C_init == 'normal':
             C_mat.normal_().mul_(0.05)  # for visualization purposes.
