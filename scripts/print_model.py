@@ -23,7 +23,6 @@ def print_model(args):
     ckpt = MasterProject.get_loaded_ckpt(args.ckpt_filename)
     params = ckpt['params']
     params['log_dir'] = '/'.join(args.ckpt_filename.split('/')[:-2])
-    exact_htv = ckpt['exact_htv']
 
     print('\nLoading parameters from checkpoint : ',
           args.ckpt_filename,
@@ -89,7 +88,7 @@ def print_model(args):
         else:
             print('HTV : {:.2f}'.format(htv))
 
-    print('Exact HTV : {:.2f}'.format(exact_htv))
+    print('Exact HTV : {:.2f}'.format(ckpt['exact_htv']))
     if params['method'] == 'rbf':
         print('sigma : {:.2E}'.format(
             get_sigma_from_eps(params["rbf"]["eps"])))

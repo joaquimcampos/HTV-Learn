@@ -28,7 +28,6 @@ def plot_model(args):
     plot_log_dir = '/'.join(args.ckpt_filename.split('/')[:-1])
     params['plots']['log_dir'] = plot_log_dir
     params['log_dir'] = '/'.join(args.ckpt_filename.split('/')[:-2])
-    exact_htv = ckpt['exact_htv']
 
     if args.log_dir is not None:
         params['plots']['log_dir'] = args.log_dir
@@ -126,7 +125,7 @@ def plot_model(args):
         else:
             print('HTV : {:.2f}'.format(htv))
 
-    print('Exact HTV : {:.2f}'.format(exact_htv))
+    print('Exact HTV : {:.2f}'.format(ckpt['exact_htv']))
     if params['method'] == 'rbf':
         print('sigma : {:.2E}'.format(
             get_sigma_from_eps(params["rbf"]["eps"])))
