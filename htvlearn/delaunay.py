@@ -113,6 +113,15 @@ class Delaunay(BaseCPWL):
         return True
 
     @property
+    def has_constant_boundary(self):
+        """ """
+        hull_values = self.tri.values[self.convex_hull_points]
+        if (hull_values - hull_values[0]).any():
+            return False
+
+        return True
+
+    @property
     def has_rectangular_range(self):
         """ """
         convex_set_points = self.tri.points[self.convex_hull_points_idx]
