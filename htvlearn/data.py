@@ -203,27 +203,9 @@ class Data():
 
         if not bool(self.test):
             if not self.cpwl.has_rectangular_range:
-                # test set is made of uniformly distributed points
-                # inside the convex hull of cpwl
-                convex_hull_points = \
-                    self.cpwl.tri.points[self.cpwl.convex_hull_points_idx]
-
-                # generate 1000 uniformly distributed convex combination
-                # coefficients
-                coeffs = torch.empty(
-                    (1000, convex_hull_points.shape[0])
-                ).uniform_(0., 1.)
-
-                # make combination convex (divide by sum)
-                coeffs = coeffs / coeffs.sum(dim=1).unsqueeze(-1)
-                assert torch.allclose(
-                    coeffs.sum(dim=1), torch.ones_like(coeffs.sum(dim=1))), \
-                    print(f'coefficients sum up to {coeffs.sum(dim=1)}.')
-
-                self.test['input'] = (coeffs.unsqueeze(-1) *
-                                      convex_hull_points).sum(dim=1)
-                assert self.test['input'].size() == (coeffs.size(0), 2), \
-                    print(f'test input shape {self.test["input"].size()}')
+                # generate uniformly distributed samples
+                # in cpwl convex set
+                self.test['input'] = self.generate_uniform_data(3350)
             else:
                 # test set is sampled on a grid inside the convex hull of cpwl
                 self.test['input'] = self.cpwl.get_grid(h=0.01,
@@ -239,28 +221,10 @@ class Data():
                 self.valid['values'] = self.test['values'].clone()
 
         if not bool(self.train):
-            # training set is made of uniformly distributed points
-            # inside the convex hull of cpwl
-            convex_hull_points = \
-                self.cpwl.tri.points[self.cpwl.convex_hull_points_idx]
-
-            # TODO: Make it really uniform
             # generate num_train_valid_samples uniformly distributed
-            # convex combination coefficients
+            # in cpwl convex set
             num_train_valid_samples = int(self.num_train)
-            coeffs = torch.empty(
-                (num_train_valid_samples, convex_hull_points.shape[0])
-            ).uniform_(0., 1.)
-
-            # make combination convex (divide by sum)
-            coeffs = coeffs / coeffs.sum(dim=1).unsqueeze(-1)
-            assert torch.allclose(
-                coeffs.sum(dim=1), torch.ones_like(coeffs.sum(dim=1))), \
-                print(f'coefficients sum up to {coeffs.sum(dim=1)}.')
-
-            x = (coeffs.unsqueeze(-1) * convex_hull_points).sum(dim=1)
-            assert x.size() == (coeffs.size(0), 2), \
-                print(f'x shape {x.size()}')
+            x = self.generate_uniform_data(num_train_valid_samples)
 
             # training / validation split indices
             if not self.test_as_valid:
@@ -294,6 +258,12 @@ class Data():
                 self.train['values'] = \
                     self.add_noise_to_values(self.train['values'])
 
+            # effective number of samples (rounded to 1000)
+            num = int(np.floor(self.train['input'].size(0) / 1000.) * 1000)
+            idx = torch.randperm(self.train['input'].size(0))[:num]
+            self.train['input'] = self.train['input'][idx]
+            self.train['values'] = self.train['values'][idx]
+
             print('nb. of training data points : '
                   f'{self.train["input"].size(0)}')
 
@@ -301,6 +271,27 @@ class Data():
                 self.valid['input'] = x[(split_idx + 1)::]
                 self.valid['values'] = \
                     self.cpwl.evaluate(self.valid['input'])
+
+    def generate_uniform_data(self, num_samples):
+        """
+        Generate uniformly distributed data inside convex set.
+
+        Works by generating num_samples points and then rejecting the
+        ones outside the convex set.
+
+        Args:
+            num_samples (int) (before possible rejection)
+        """
+        x = torch.empty((num_samples, 2))
+        x[:, 0].uniform_(self.cpwl.tri.points[:, 0].min(),
+                         self.cpwl.tri.points[:, 0].max())
+        x[:, 1].uniform_(self.cpwl.tri.points[:, 1].min(),
+                         self.cpwl.tri.points[:, 1].max())
+        # reject samples outside convex set
+        idx = self.cpwl.tri.find_simplex(x)
+        x = x[idx >= 0]
+
+        return x
 
     def add_noise_to_values(self, values):
         """  """
