@@ -190,21 +190,20 @@ def csr_to_spmatrix(M, extended_shape=None):
     return M_sp
 
 
-def compute_psnr_from_mse(mse, pixel_max=255):
-    if mse == 0:
-        psnr = 100
-    else:
-        psnr = 20 * math.log10(pixel_max / math.sqrt(mse))
+def compute_snr(x_values, mse):
+    """ """
+    gt_energy = (x_values ** 2).mean().item()
+    snr = 10 * math.log10(gt_energy / mse)
 
-    return psnr
+    return snr
 
 
-def compute_mse_psnr(x_values, x_values_hat, pixel_max=255):
+def compute_mse_snr(x_values, x_values_hat):
     """ """
     mse = ((x_values - x_values_hat)**2).mean().item()
-    psnr = compute_psnr_from_mse(mse, pixel_max)
+    snr = compute_snr(x_values, mse)
 
-    return mse, psnr
+    return mse, snr
 
 
 def json_load(json_filename):
