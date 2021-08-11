@@ -38,5 +38,12 @@ class HTVProject(MasterProject):
     def restore_model_data(self):
         """ """
         super().restore_model_data()
-        self.lat = Lattice(X_mat=self.loaded_ckpt['lattice']['init']['X_mat'],
-                           C_mat=self.loaded_ckpt['lattice']['init']['C_mat'])
+        try:
+            self.lat = \
+                Lattice(X_mat=self.loaded_ckpt['lattice']['final']['X_mat'],
+                        C_mat=self.loaded_ckpt['lattice']['final']['C_mat'])
+        except KeyError:
+            print('Could not restore final lattice... Using initial one.')
+            self.lat = \
+                Lattice(X_mat=self.loaded_ckpt['lattice']['init']['X_mat'],
+                        C_mat=self.loaded_ckpt['lattice']['init']['C_mat'])

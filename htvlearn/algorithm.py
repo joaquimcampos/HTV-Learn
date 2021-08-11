@@ -55,9 +55,6 @@ class Algorithm():
             raise ValueError('input and values have different lengthtv: '
                              f'{self.input.size(0)}, {self.values.size(0)}...')
 
-        if not self.lat.is_padded(pad_size=1):
-            raise ValueError('Lattice does not have zero boundaries...')
-
         # results_dict logs the numerical results
         self.results_dict = {}
 
