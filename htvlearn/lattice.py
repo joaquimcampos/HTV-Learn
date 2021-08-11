@@ -4,6 +4,7 @@ from torch import Tensor
 import torch.nn.functional as F
 import numpy as np
 import warnings
+from django.utils.functional import classproperty
 
 from htvlearn.grid import Grid
 
@@ -28,8 +29,6 @@ class Lattice():
     """
     ldim = 2  # lattice dimension
     centers_barycentric_coordinates = Tensor([0.333, 0.333, 0.334])
-    # requires that lattice is hexagonal and lsize*h = 1 (both enforced)
-    bottom_right_std = Tensor([0.2500, -0.4330])
     hexagonal_matrix = Tensor([[1., 0.5],
                                [0., 0.5 * math.sqrt(3)]])
 
@@ -79,6 +78,18 @@ class Lattice():
         assert cls.is_hexagonal(X_mat), 'Lattice is not hexagonal'
 
         return X_mat, C_mat
+
+    # These two class properties require that lattice
+    # is hexagonal and lsize*h = 1 (both enforced)
+    @classproperty
+    def bottom_right_std(cls):
+        """ """
+        return cls.hexagonal_matrix @ Tensor([0.5, -0.5])
+
+    @classproperty
+    def upper_right_std(cls):
+        """ """
+        return cls.hexagonal_matrix @ Tensor([0.5, 0.5])
 
     @staticmethod
     def is_hexagonal(X_mat):
