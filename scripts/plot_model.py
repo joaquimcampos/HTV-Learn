@@ -8,10 +8,9 @@ from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
 from htvlearn.htv_manager import HTVManager
 from htvlearn.delaunay import Delaunay
-from htvlearn.lattice import Lattice
 from htvlearn.plots.plot_cpwl import Plot
 from htvlearn.htv_utils import (
-    compute_mse_psnr,
+    compute_snr,
     get_sigma_from_eps,
     silence_stdout
 )
@@ -24,6 +23,10 @@ def plot_model(args):
     """
     ckpt, params = MasterProject.load_ckpt_params(args.ckpt_filename,
                                                   flatten=False)
+    print('\nLoading parameters from checkpoint : ',
+          args.ckpt_filename,
+          sep='\n')
+
     params['plots'] = {}
     plot_log_dir = '/'.join(args.ckpt_filename.split('/')[:-1])
     params['plots']['log_dir'] = plot_log_dir
@@ -32,8 +35,6 @@ def plot_model(args):
     if args.log_dir is not None:
         params['plots']['log_dir'] = args.log_dir
 
-    print('Parameters: ', params, sep='\n')
-
     with silence_stdout():
 
         params['restore'] = True
@@ -41,57 +42,26 @@ def plot_model(args):
 
         if params['method'] == 'neural_net':
             manager = NNManager(params, write=False)
-            data_obj = manager.data
-            test_mse = manager.evaluate_results(mode='test')
-            train_mse = manager.evaluate_results(mode='train')
-
             if ckpt['htv_log']:
                 _, htv_model = NNManager.read_htv_log(ckpt['htv_log'])
                 htv = htv_model[-1]
 
-        if params['method'] == 'rbf':
+        elif params['method'] == 'rbf':
             manager = RBFManager(params, write=False)
-            data_obj = manager.data
-
-            # data_obj.test['input'] = \
-            #     data_obj.cpwl.get_grid(h=0.002,
-            #                            to_numpy=False,
-            #                            to_float32=True).x
-            #
-            # data_obj.test['values'] = \
-            #     data_obj.cpwl.evaluate(data_obj.test['input'])
-
-            output_test = manager.forward_data(data_obj.test['input'])
-            data_obj.test['predictions'] = output_test
-            test_mse, _ = compute_mse_psnr(data_obj.test['values'],
-                                           output_test)
-
-            output_train = manager.forward_data(data_obj.train['input'])
-            train_mse, _ = compute_mse_psnr(data_obj.train['values'],
-                                            output_train)
-
             if ckpt['htv_log']:
                 htv = RBFManager.read_htv_log(ckpt['htv_log'])
 
         elif params['method'] == 'htv':
             manager = HTVManager(params, write=False)
-            data_obj = manager.data
-            lattice_obj = Lattice(X_mat=ckpt['lattice']['final']['X_mat'],
-                                  C_mat=ckpt['lattice']['final']['C_mat'])
-
-            output_test = manager.forward_data(lattice_obj,
-                                               data_obj.test['input'])
-            data_obj.test['predictions'] = output_test
-            test_mse, _ = compute_mse_psnr(data_obj.test['values'],
-                                           output_test)
-
-            output_train = manager.forward_data(lattice_obj,
-                                                data_obj.train['input'])
-            train_mse, _ = compute_mse_psnr(data_obj.train['values'],
-                                            output_train)
-
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]
+
+        test_mse, output_test = manager.evaluate_results(mode='test')
+        train_mse, _ = manager.evaluate_results(mode='train')
+
+        data_obj = manager.data
+        test_snr = compute_snr(data_obj.test['values'], test_mse)
+        train_snr = compute_snr(data_obj.train['values'], train_mse)
 
     if not args.no_gt:
         plot = Plot(data_obj, **params['plots'])
@@ -103,7 +73,7 @@ def plot_model(args):
 
     ret_dict = {
         'points': data_obj.test['input'].cpu().numpy(),
-        'values': data_obj.test['predictions'].cpu().numpy()
+        'values': output_test.cpu().numpy()
     }
 
     # construct grid from predictions
@@ -116,14 +86,16 @@ def plot_model(args):
 
     print('\nTrain mse : {:.2E}'.format(train_mse))
     print('Test mse  : {:.2E}'.format(test_mse))
+    print('Train snr : {:.2f} dB'.format(train_snr))
+    print('Test snr  : {:.2f} dB'.format(test_snr))
 
     if htv is not None:
         if isinstance(htv, dict):
             for key, val in htv.items():
                 htv[key] = float('{:.2f}'.format(val[0]))
-            print('HTV :', json.dumps(htv, indent=4, sort_keys=False))
+            print('HTV\t  :', json.dumps(htv, indent=4, sort_keys=False))
         else:
-            print('HTV : {:.2f}'.format(htv))
+            print('HTV\t  : {:.2f}'.format(htv))
 
     print('Exact HTV : {:.2f}'.format(ckpt['exact_htv']))
     if params['method'] == 'rbf':

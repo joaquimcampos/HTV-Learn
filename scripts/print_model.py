@@ -3,13 +3,12 @@
 import argparse
 import json
 
-from htvlearn.lattice import Lattice
 from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
 from htvlearn.htv_manager import HTVManager
 from htvlearn.htv_utils import (
-    compute_mse_psnr,
+    compute_snr,
     get_sigma_from_eps,
     silence_stdout
 )
@@ -36,62 +35,69 @@ def print_model(args):
 
         if params['method'] == 'neural_net':
             manager = NNManager(params, write=False)
-            test_mse = manager.evaluate_results(mode='test')
-            train_mse = manager.evaluate_results(mode='train')
-
             if ckpt['htv_log']:
                 _, htv_model = NNManager.read_htv_log(ckpt['htv_log'])
                 htv = htv_model[-1]
 
         elif params['method'] == 'rbf':
             manager = RBFManager(params, write=False)
-            data_obj = manager.data
-            output = manager.forward_data(data_obj.test['input'])
-            test_mse, _ = compute_mse_psnr(data_obj.test['values'],
-                                           output)
-
-            output_train = manager.forward_data(data_obj.train['input'])
-            train_mse, _ = compute_mse_psnr(data_obj.train['values'],
-                                            output_train)
-
             if ckpt['htv_log']:
                 htv = RBFManager.read_htv_log(ckpt['htv_log'])
 
         elif params['method'] == 'htv':
             manager = HTVManager(params, write=False)
-            data_obj = manager.data
-            lattice_obj = Lattice(X_mat=ckpt['lattice']['final']['X_mat'],
-                                  C_mat=ckpt['lattice']['final']['C_mat'])
-
-            output_test = \
-                manager.forward_data(lattice_obj, data_obj.test['input'])
-            data_obj.test['predictions'] = output_test
-            test_mse, _ = compute_mse_psnr(data_obj.test['values'],
-                                           output_test)
-
-            output_train = manager.forward_data(lattice_obj,
-                                                data_obj.train['input'])
-            train_mse, _ = compute_mse_psnr(data_obj.train['values'],
-                                            output_train)
-
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]
 
+        test_mse, output_test = manager.evaluate_results(mode='test')
+        train_mse, output_train = manager.evaluate_results(mode='train')
+
+        data_obj = manager.data
+        test_snr = compute_snr(data_obj.test['values'], test_mse)
+        train_snr = compute_snr(data_obj.train['values'], train_mse)
+
     print('\nTrain mse : {:.2E}'.format(train_mse))
     print('Test mse  : {:.2E}'.format(test_mse))
+    print('Train snr : {:.2f} dB'.format(train_snr))
+    print('Test snr  : {:.2f} dB'.format(test_snr))
 
     if htv is not None:
         if isinstance(htv, dict):
             for key, val in htv.items():
                 htv[key] = float('{:.2f}'.format(val[0]))
-            print('HTV :', json.dumps(htv, indent=4, sort_keys=False))
+            print('HTV\t  :', json.dumps(htv, indent=4, sort_keys=False))
         else:
-            print('HTV : {:.2f}'.format(htv))
+            print('HTV\t  : {:.2f}'.format(htv))
 
     print('Exact HTV : {:.2f}'.format(ckpt['exact_htv']))
     if params['method'] == 'rbf':
         print('sigma : {:.2E}'.format(
             get_sigma_from_eps(params["rbf"]["eps"])))
+
+    print('\navg train value diff {:.2E}'
+          .format((data_obj.train['values'] - output_train)
+                  .abs().mean().item()))
+    print('max train value diff: {:.2f}'
+          .format((data_obj.train['values'] - output_train)
+                  .abs().max().item()))
+    print('max train value: {:.2f}'
+          .format(data_obj.train['values'].max().item()))
+    print('min train value: {:.2f}'
+          .format(data_obj.train['values'].min().item()))
+
+    print('avg test value diff {:.2E}'
+          .format((data_obj.test['values'] - output_test)
+                  .abs().mean().item()))
+    print('max test value diff: {:.2f}'
+          .format((data_obj.test['values'] - output_test)
+                  .abs().max().item()))
+    print('max test value: {:.2f}'
+          .format(data_obj.test['values'].max().item()))
+    print('min test value: {:.2f}'
+          .format(data_obj.test['values'].min().item()))
+
+    print('min test output value: {:.2f}'
+          .format(output_test.min().item()))
 
 
 if __name__ == "__main__":

@@ -5,7 +5,11 @@ import argparse
 import json
 
 from htvlearn.master_project import MasterProject
+from htvlearn.nn_manager import NNManager
+from htvlearn.rbf_manager import RBFManager
+from htvlearn.htv_manager import HTVManager
 from htvlearn.htv_utils import (
+    compute_snr,
     json_load,
     get_sigma_from_eps,
     silence_stdout
@@ -42,18 +46,43 @@ def print_model_from_json(args):
                if 'htv' in model_results
                else None)
 
-    print('\nTrain mse: {:.2E}'.format(train_mse))
-    print('Test mse: {:.2E}'.format(test_mse))
+        if params['method'] == 'neural_net':
+            manager = NNManager(params, write=False)
+        elif params['method'] == 'rbf':
+            manager = RBFManager(params, write=False)
+        elif params['method'] == 'htv':
+            manager = HTVManager(params, write=False)
+
+    data_obj = manager.data
+    train_snr = compute_snr(data_obj.train['values'], train_mse)
+    test_snr = compute_snr(data_obj.test['values'], test_mse)
+
+    print('\nTrain mse : {:.2E}'.format(train_mse))
+    print('Test mse  : {:.2E}'.format(test_mse))
+    print('Train snr : {:.2f} dB'.format(train_snr))
+    print('Test snr  : {:.2f} dB'.format(test_snr))
 
     if htv is not None:
         if isinstance(htv, dict):
-            for key, val in htv.items():
-                htv[key] = float('{:.2f}'.format(val))
-            print('HTV:', json.dumps(htv, indent=4, sort_keys=False))
+            if 'finite_diff_differential' in htv.keys() or \
+                    'exact_differential' in htv.keys():
+                values_list = list(htv.values())
+                if isinstance(values_list[0], dict):
+                    htv = values_list[0]
+                    print('HTV\t  :',
+                          json.dumps(htv, indent=4, sort_keys=False))
+                else:
+                    htv = float('{:.2f}'.format(values_list[0]))
+                    print('HTV\t  : {:.2f}'.format(htv))
+            else:
+                for key, val in htv.items():
+                    htv[key] = float('{:.2f}'.format(val))
+                print('HTV\t  :',
+                      json.dumps(htv, indent=4, sort_keys=False))
         else:
-            print('HTV: {:.2f}'.format(htv))
+            print('HTV\t  : {:.2f}'.format(htv))
 
-    print('Exact HTV: {:.2f}'.format(ckpt['exact_htv']))
+    print('Exact HTV : {:.2f}'.format(ckpt['exact_htv']))
     if params['method'] == 'rbf':
         print('sigma: {:.2E}'.format(
             get_sigma_from_eps(params["rbf"]["eps"])))
