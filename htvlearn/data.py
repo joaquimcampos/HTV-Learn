@@ -150,6 +150,9 @@ class Data():
         self.noise_ratio = noise_ratio
         self.seed = seed
         self.verbose = verbose
+        # if not overwritten, computed in add_noise_to_values()
+        # from self.noise_ratio and delaunay max and min height
+        self.noise_std = None
 
         # set seeds
         if self.seed >= 0:
@@ -190,7 +193,7 @@ class Data():
 
             elif self.dataset_name.endswith('planes'):
                 self.delaunay['points'], self.delaunay['values'] = \
-                    self.init_planes()  # TODO
+                    self.init_planes()
 
             elif 'face' in self.dataset_name:
                 self.delaunay['points'], self.delaunay['values'] = \
@@ -295,7 +298,10 @@ class Data():
 
     def add_noise_to_values(self, values):
         """  """
-        noise_std = self.noise_ratio * (values.max() - values.min())
+        noise_std = self.noise_std
+        if noise_std is None:
+            noise_std = self.noise_ratio * (values.max() - values.min())
+
         if self.verbose:
             print(f'Adding noise of standard deviation s = {noise_std}')
         noise = torch.empty_like(values).normal_(std=noise_std)
@@ -342,6 +348,84 @@ class Data():
         self.test_as_valid = True
 
         return points.numpy(), values.numpy()
+
+    def init_planes(self):
+        """
+        Initialize planes vertice triangulation and values;
+        initialize triangle centers, plane coefficients, and
+        affine coefficients.
+        """
+        pad = 0.08
+        x_min, _, x_max, _ = self.get_data_boundaries(hw_ratio=0.01, pad=pad)
+        _, y_min, _, y_max = self.get_data_boundaries(hw_ratio=100, pad=pad)
+
+        dx = (x_max - x_min) / 100  # delta x step
+        dy = (y_max - y_min) / 100  # delta y step
+
+        # control points with values - (x1, x2, val)
+        vert = \
+            torch.tensor([[x_min + 30 * dx, y_min + 35 * dy, dx * 20],  # 0
+                          [x_max - 40 * dx, y_min + 30 * dy, dx * 20],  # 1
+                          [x_max - 35 * dx, y_max - 30 * dy, dx * 20],  # 2
+                          [x_min + 40 * dx, y_max - 30 * dy, dx * 20],  # 3
+                          [x_max - 25 * dx, y_min + 5 * dy, 0.],  # 4
+                          [x_min + 25 * dx, y_max - 5 * dy, 0.]])  # 5
+
+        # auxiliary triangulation of the function
+        # size (num_triangles, vertices)
+        simplices = torch.tensor([[0, 1, 3],
+                                  [1, 2, 3],
+                                  [4, 1, 0],
+                                  [0, 3, 5],
+                                  [4, 2, 1],
+                                  [3, 2, 5]])
+
+        # check values of vertices so that there is a seamless
+        # plane junction
+        x_v6 = self.get_zero_loc(vert, simplices, 2, 3)
+        x_v7 = self.get_zero_loc(vert, simplices, 4, 5)
+        br = Lattice.bottom_right_std
+        ur = Lattice.upper_right_std
+
+        # add x_v6, x_v7, and lattice corners
+        new_vert = torch.tensor([[x_v6[0], x_v6[1], 0.],  # 6
+                                 [x_v7[0], x_v7[1], 0.],  # 7
+                                 [br[0], br[1], 0.],  # 8
+                                 [-br[0], -br[1], 0.],  # 9
+                                 [ur[0], ur[1], 0.],  # 10
+                                 [-ur[0], -ur[1], 0.]])  # 11
+
+        vert = torch.cat((vert, new_vert), dim=0)
+
+        # overwrite noise standard deviation
+        self.noise_std = self.noise_ratio * vert[:, 2].max()
+
+        # add linear term to first vertices
+        a = torch.tensor([0.1, 0.05])
+        b = torch.tensor([-0.05])
+        vert[:, 2] += (vert[:, 0:2] * a.unsqueeze(0)).sum(1) + b
+        vert = vert.numpy()
+
+        return vert[:, 0:2], vert[:, 2]
+
+    @staticmethod
+    def get_zero_loc(vert, simplices, idx1, idx2, zval=0):
+        """ """
+        # size (2, 3, 3)
+        idx_vec = [idx1, idx2]
+        simplices_vert = \
+            torch.cat(tuple(vert[simplices[i]].unsqueeze(0)
+                            for i in idx_vec), dim=0)
+
+        plane_coeff = Lattice.solve_method(simplices_vert)
+        affine_coeff = Lattice.get_affine_coeff_from_plane_coeff(plane_coeff)
+        assert affine_coeff.size() == (2, 3)
+
+        B = -affine_coeff[:, -1:] + zval
+        A = affine_coeff[:, 0:2]
+        x, _ = torch.solve(B, A)
+
+        return x.squeeze(-1)
 
     def read_face(self, cut_eps=0.6):
         """
