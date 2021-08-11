@@ -74,31 +74,6 @@ def print_model(args):
         print('sigma : {:.2E}'.format(
             get_sigma_from_eps(params["rbf"]["eps"])))
 
-    print('\navg train value diff {:.2E}'
-          .format((data_obj.train['values'] - output_train)
-                  .abs().mean().item()))
-    print('max train value diff: {:.2f}'
-          .format((data_obj.train['values'] - output_train)
-                  .abs().max().item()))
-    print('max train value: {:.2f}'
-          .format(data_obj.train['values'].max().item()))
-    print('min train value: {:.2f}'
-          .format(data_obj.train['values'].min().item()))
-
-    print('avg test value diff {:.2E}'
-          .format((data_obj.test['values'] - output_test)
-                  .abs().mean().item()))
-    print('max test value diff: {:.2f}'
-          .format((data_obj.test['values'] - output_test)
-                  .abs().max().item()))
-    print('max test value: {:.2f}'
-          .format(data_obj.test['values'].max().item()))
-    print('min test value: {:.2f}'
-          .format(data_obj.test['values'].min().item()))
-
-    print('min test output value: {:.2f}'
-          .format(output_test.min().item()))
-
 
 if __name__ == "__main__":
 
