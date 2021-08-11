@@ -127,24 +127,15 @@ class RBFManager(RBFProject):
         Returns:
             htv: dict('p': htv),
         """
+        # e.g. htv_log = {'1': htv_1, '2': htv_2}
         assert isinstance(htv_log, dict)
 
-        # e.g. htv_log = {'finite_diff_differential': {'1': htv_1, '2': htv_2}}
-        # dictio is a dictionary containing 'p': htv_p
-        # TODO: Backward compatibility.
-        # Afterwards, delete finite_diff_differential
-        if 'finite_diff_differential' in htv_log:
-            dictio = htv_log['finite_diff_differential']
-        else:
-            dictio = htv_log
-
-        assert isinstance(dictio, dict)
         # p in schatten-p norms
-        p_array = np.array([int(p) for p in dictio.keys()])
+        p_array = np.array([int(p) for p in htv_log.keys()])
         p_array.sort()
 
         htv = {}
         for p in p_array:
-            htv[str(p)] = np.array([float(dictio[str(p)])])
+            htv[str(p)] = np.array([float(htv_log[str(p)])])
 
         return htv
