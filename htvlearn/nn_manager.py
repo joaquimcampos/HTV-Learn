@@ -5,7 +5,7 @@ import numpy as np
 from functools import partial
 import torch.autograd.functional as AF
 
-from htvlearn.htv_utils import compute_mse_psnr
+from htvlearn.htv_utils import compute_mse_snr
 from htvlearn.models import GELUfcNet2D, ReLUfcNet2D
 from htvlearn.nn_project import NNProject
 from htvlearn.hessian import (
@@ -189,8 +189,8 @@ class NNManager(NNProject):
 
     def validation_step(self, epoch):
         """ """
-        train_loss = self.evaluate_results(mode='train')
-        valid_loss = self.evaluate_results(mode='valid')
+        train_loss, _ = self.evaluate_results(mode='train')
+        valid_loss, _ = self.evaluate_results(mode='valid')
 
         #####
         if not self.params['no_htv']:
@@ -289,17 +289,17 @@ class NNManager(NNProject):
 
     def test(self):
         """ """
-        loss = self.evaluate_results(mode='test')
+        test_loss, _ = self.evaluate_results(mode='test')
 
-        print(f'\ntest mse : {loss}')
-        self.update_json('test_mse', loss)
+        print(f'\ntest mse : {test_loss}')
+        self.update_json('test_mse', test_loss)
 
         # save test prediction to last checkpoint
         self.ckpt_log_step(self.params['num_epochs'] - 1)
 
         print('\nFinished testing.')
 
-    def evaluate_results(self, mode='valid'):
+    def evaluate_results(self, mode):
         """ """
         assert mode in ['train', 'valid', 'test']
 
@@ -337,11 +337,11 @@ class NNManager(NNProject):
 
         loss = running_loss / total
         # sanity check
-        mse, _ = compute_mse_psnr(values.cpu(), predictions.cpu())
+        mse, _ = compute_mse_snr(values.cpu(), predictions.cpu())
         assert np.allclose(mse, loss), \
             '(mse: {:.7f}, loss: {:.7f})'.format(mse, loss)
 
-        return loss
+        return loss, predictions
 
     def forward_data(self, inputs, batch_size=64):
         """ """
