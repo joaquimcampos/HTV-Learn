@@ -381,12 +381,18 @@ class NNManager(NNProject):
 
         # e.g. epoch 1
         # non-cpwl network:
-        # htv_log['1'] = {'exact_differential': {'1': htv_1, '2': htv_2}}
-        # relu network: epoch 1: htv_log['1'] = {'exact_differential': htv}
+        # htv_log['1'] = {'1': htv_1, '2': htv_2}
+        # relu network: epoch 1: htv_log['1'] = htv
 
         # dictio is list of dictionaries containing 'p': htv_p for each epoch
         # or a single value in the case of CPWL networks
-        dictio = [val[list(val)[0]] for val in htv_log.values()]
+        values_list = list(htv_log.values())
+        if 'finite_diff_differential' in values_list[0] or \
+                'exact_differential' in values_list[0]:
+            # TODO: Remove backward compatibility
+            dictio = [val[list(val)[0]] for val in values_list]
+        else:
+            dictio = values_list
 
         if isinstance(dictio[0], dict):
             # p in schatten-p norms
