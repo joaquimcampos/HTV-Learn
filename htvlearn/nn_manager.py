@@ -275,9 +275,7 @@ class NNManager(NNProject):
                 Hess = get_exact_Hessian(
                     grid, partial(self.differentiate_func, 'hessian'))
 
-            htv['exact_differential'] = self.get_htv_from_Hess(Hess,
-                                                               grid.h,
-                                                               cpwl=cpwl)
+            htv = self.get_htv_from_Hess(Hess, grid.h, cpwl=cpwl)
 
         elif self.params['htv_mode'] == 'finite_diff_differential':
             grid = self.data.cpwl.get_grid(h=0.0002)
@@ -285,9 +283,7 @@ class NNManager(NNProject):
                 Hess = get_finite_second_diff_Hessian(
                     grid, self.evaluate_func)
 
-            htv['finite_diff_differential'] = self.get_htv_from_Hess(Hess,
-                                                                     grid.h,
-                                                                     cpwl=cpwl)
+            htv = self.get_htv_from_Hess(Hess, grid.h, cpwl=cpwl)
 
         return htv
 
