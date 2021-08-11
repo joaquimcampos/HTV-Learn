@@ -42,7 +42,7 @@ def nn_recompute_train_mse(args):
 
             params['restore'] = True
             manager = NNManager(params, write=False)
-            train_mse = manager.evaluate_results(mode='train')
+            train_mse, _ = manager.evaluate_results(mode='train')
             new_results_dict[model_name]['latest_train_mse'] = \
                 float('{:.2E}'.format(train_mse))
 
