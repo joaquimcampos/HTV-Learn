@@ -7,7 +7,7 @@ from htvlearn.htv_project import HTVProject
 from htvlearn.algorithm import Algorithm
 from htvlearn.operators import Operators
 from htvlearn.hessian import get_finite_second_diff_Hessian
-from htvlearn.htv_utils import compute_mse_psnr
+from htvlearn.htv_utils import compute_mse_snr
 
 
 class HTVManager(HTVProject):
@@ -34,7 +34,11 @@ class HTVManager(HTVProject):
         # updates lattice; creates lattice_dict and results_dict.
         results_dict, lattice_dict = self.algorithm.multires_admm()
 
-        self.evaluate_results()
+        for mode in ['valid', 'test']:
+            mse, _ = self.evaluate_results(mode)
+            self.update_json('_'.join([mode, 'mse']), mse)
+            print(f'{mode} mse  : {mse}')
+
         self.htv = self.compute_htv()
         results_dict['htv'] = self.htv
 
@@ -85,18 +89,24 @@ class HTVManager(HTVProject):
 
         return htv
 
-    def evaluate_results(self):
+    def evaluate_results(self, mode):
         """ """
-        for mode, data_dict in \
-                zip(['valid', 'test'], [self.data.valid, self.data.test]):
-            output = self.forward_data(self.lat, data_dict['input'])
-            # save predictions
-            data_dict['predictions'] = output
+        assert mode in ['train', 'valid', 'test']
 
-            # compute mse
-            mse, _ = compute_mse_psnr(data_dict['values'], output)
-            self.update_json('_'.join([mode, 'mse']), mse)
-            print(f'{mode} mse  : {mse}')
+        if mode == 'train':
+            data_dict = self.data.train
+        elif mode == 'valid':
+            data_dict = self.data.valid
+        else:
+            data_dict = self.data.test
+
+        output = self.forward_data(self.lat, data_dict['input'])
+        # save predictions
+        data_dict['predictions'] = output
+        # compute mse
+        mse, _ = compute_mse_snr(data_dict['values'], output)
+
+        return mse, output
 
     @staticmethod
     def forward_data(lattice_obj, input_std, **kwargs):

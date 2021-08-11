@@ -9,7 +9,7 @@ import json
 from htvlearn.rbf_project import RBFProject
 from htvlearn.rbf import RBF
 from htvlearn.hessian import get_finite_second_diff_Hessian
-from htvlearn.htv_utils import compute_mse_psnr
+from htvlearn.htv_utils import compute_mse_snr
 
 
 class RBFManager(RBFProject):
@@ -36,8 +36,8 @@ class RBFManager(RBFProject):
         self.htv_dict = {}
 
         output = self.forward_data(self.data.train['input'])
-        mse, _ = compute_mse_psnr(self.data.train['values'].cpu(),
-                                  output.cpu())
+        mse, _ = compute_mse_snr(self.data.train['values'].cpu(),
+                                 output.cpu())
         self.update_json('train_mse', mse)
         print(f'Train mse : {mse}')
 
@@ -52,7 +52,10 @@ class RBFManager(RBFProject):
             print('Finished.')
             self.update_json('htv', self.htv_dict)
 
-        self.evaluate_results()
+        for mode in ['valid', 'test']:
+            mse, _ = self.evaluate_results(mode)
+            self.update_json('_'.join([mode, 'mse']), mse)
+            print(f'{mode} mse  : {mse}')
 
         # save params and data to checkpoint
         self.save_to_ckpt()
@@ -102,18 +105,24 @@ class RBFManager(RBFProject):
 
         return htv
 
-    def evaluate_results(self):
+    def evaluate_results(self, mode):
         """ """
-        for mode, data_dict in \
-                zip(['valid', 'test'], [self.data.valid, self.data.test]):
-            output = self.forward_data(data_dict['input'])
-            # save predictions
-            data_dict['predictions'] = output
+        assert mode in ['train', 'valid', 'test']
 
-            # compute mse
-            mse, _ = compute_mse_psnr(data_dict['values'], output)
-            self.update_json('_'.join([mode, 'mse']), mse)
-            print(f'{mode} mse  : {mse}')
+        if mode == 'train':
+            data_dict = self.data.train
+        elif mode == 'valid':
+            data_dict = self.data.valid
+        else:
+            data_dict = self.data.test
+
+        output = self.forward_data(data_dict['input'])
+        # save predictions
+        data_dict['predictions'] = output
+        # compute mse
+        mse, _ = compute_mse_snr(data_dict['values'], output)
+
+        return mse, output
 
     def forward_data(self, input, *args, **kwargs):
         """ """
