@@ -11,7 +11,15 @@ from htvlearn.struct_default_values import structure, default_values
 
 # Fix the Acknowledgements (new Grant)
 def get_arg_parser():
-    """ Define argument parser """
+    """
+    Parses command-line arguments.
+
+    The default values are fetched from the 'default_values' dictionary.
+    (see struct_default_values.py)
+
+    Returns:
+        parser (argparse.ArgumentParser)
+    """
 
     parser = argparse.ArgumentParser(
         description='HTV for Supervised Learning and '
@@ -220,8 +228,22 @@ def get_arg_parser():
 
 
 def verify_params(params):
-    """ Verify parameters (e.g. mutual inclusivity or exclusivity) and
-    assign recursive structure to parameters.
+    """
+    Verifies the parameters (e.g. checks for mutual inclusivity/exclusivity).
+
+    If not specified by the user via the command-line, a parameter
+    gets the default value from the 'default_values' dictionary.
+    (see struct_default_values.py).
+
+    Args:
+        params (dict):
+            dictionary with parameter names (keys) and values.
+
+    Returns:
+        params (dict):
+            dictionary with all parameters. If not specified by the user,
+            a parameter gets the default value in the 'default_values'
+            dictionary.
     """
     # Check parameters input by user and set default values
     for key, value in default_values.items():
@@ -232,7 +254,24 @@ def verify_params(params):
 
 
 def main_prog(params, isloaded_params=False):
-    """ Main program
+    """
+    Main program that initializes the Manager with the parameters
+    and runs the training.
+
+    It first verifies the params dictionary, if necessary.
+
+    'params' is then assigned a tree structure according to the
+    'structure' dictionary (see struct_default_values.py).
+
+    Finally, 'params' is used to instantiate a Manager() object
+    and the training is ran.
+
+    Args:
+        params (dict):
+            dictionary with the parameters from the parser.
+        isloaded_params :
+            True if params were loaded from ckpt (no need to verify) and
+            are flattened (htv_utils), i.e., don't have a tree structure.
     """
     if not isloaded_params:
         params = verify_params(params)
