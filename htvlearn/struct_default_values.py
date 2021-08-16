@@ -1,10 +1,7 @@
-# Define default values of parameters and desired structure for the
-# parameters dictionary
-
-# Example of default_values dictionary:
-# default_values = {'combination' : None,
-#                   'num_epochs' : 300,
-#                   'train' : False}
+"""
+Define default values of parameters and desired structure for the
+parameters dictionary.
+"""
 
 default_values = {
     'method': 'neural_net',
@@ -52,9 +49,9 @@ default_values = {
 }
 
 # This tree defines the strcuture of self.params in the Project() class.
-# if it is desired to keep an entry in the first level that is also a leaf of
-# deeper levels of the structure, this entry should be added to the first
-# level too (e.g. as done for 'log_dir')
+# if it is desired to keep an entry in the first level that is also a
+# leaf of deeper levels of the structure, this entry should be added to
+# the first level too (e.g. as done for 'log_dir')
 structure = {
     'lmbda': None,
     'log_dir': None,
