@@ -7,18 +7,28 @@ import torch.nn.functional as F
 
 class ReLUfcNet2D(nn.Module):
     """
-    input size :
-    N x 2 (point in space)
+    2D Fully-connected network with ReLU activations.
 
-    Output size of each layer:
-    N x 2 -> fc1 -> N x h
-          -> fchidden -> N x N (x num_hidden_layers-1)
-          -> fclast -> N x 1
+    input size: N x 2  (point in space)
+
+    Network (layer type -> output size):
+    fc1    -> N x h
+    fc2    -> N x h
+    ...
+    fcL    -> N x h  (L=num_hidden_layers)
+    fclast -> N x 1
     """
     def __init__(self,
                  num_hidden_layers=5,
                  num_hidden_neurons=50,
                  **kwargs):
+        """
+        Args:
+            num_hidden_layers (int):
+                number of hidden layers
+            num_hidden_neurons (int):
+                number of hidden neurons
+        """
 
         super().__init__()
         self.num_hidden_layers = num_hidden_layers
