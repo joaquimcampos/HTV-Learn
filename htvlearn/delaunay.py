@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import scipy.spatial
 
-from htvlearn.base_cpwl import BaseCPWL
 from htvlearn.grid import Grid
 from htvlearn.hessian import (
     get_finite_second_diff_Hessian,
@@ -10,7 +9,7 @@ from htvlearn.hessian import (
 )
 
 
-class Delaunay(BaseCPWL):
+class Delaunay():
     def __init__(self,
                  npoints=120,
                  x_range=2,
