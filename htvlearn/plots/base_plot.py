@@ -51,7 +51,8 @@ class BasePlot():
                 min and max ranges for val.
             colorscale (str):
                 matplotlib colorscale or None (use default).
-        returns:
+
+        Returns:
             rgb color.
         """
         colorsc = colorscale if colorscale is not None else cls.colorscale
@@ -81,6 +82,7 @@ class BasePlot():
                 by val.
             vmin, vmax (2d array):
                 min and max ranges for each element in val.
+
         Returns:
             rgb color.
         """
@@ -105,10 +107,12 @@ class BasePlot():
         """
         Map an array of values to colors.
 
-        array (1d array):
-            array of values to map to colors. size: (N,)
-        min, max (float):
-            If not None, set the ranges for the values in array.
+        Args:
+            array (1d array):
+                array of values to map to colors. size: (N,)
+            min, max (float):
+                If not None, set the ranges for the values in array.
+
         Returns:
             1d array of rgb colors. size: (N,)
         """
@@ -124,10 +128,12 @@ class BasePlot():
         """
         Map a 2D array of values to colors.
 
-        array (2d array):
-            array of values to map to colors. size: (N x 2).
-        min, max (2d array):
-            If not None, sets the ranges for the values in array.
+        Args:
+            array (2d array):
+                array of values to map to colors. size: (N x 2).
+            min, max (2d array):
+                If not None, sets the ranges for the values in array.
+
         Returns:
             1d array of rgb colors. size: (N,)
         """
@@ -156,6 +162,7 @@ class BasePlot():
             max (2d array):
                 If not None, sets the max ranges for the values in
                 affine_coeff[:, 0:2].
+
         Returns:
             facecolor (1d array):
                 1d array of rgb colors whose size is the number of simplices.
@@ -179,6 +186,7 @@ class BasePlot():
                 positions of the samples.
             z (1d array):
                 values of the samples.
+
         Returns:
             A plotly.graph_objects.Scatter3D object.
         """
@@ -259,12 +267,13 @@ class BasePlot():
         """
         Plot html figure and export to log_dir.
 
-        fig:
-            instance of plotly.graph_objects.Figure to plot.
-        filename (str):
-            Figure filename.
-        log_dir (str):
-            Log directory where figure is exported to.
+        Args:
+            fig:
+                instance of plotly.graph_objects.Figure to plot.
+            filename (str):
+                Figure filename.
+            log_dir (str):
+                Log directory where figure is exported to.
         """
         assert isinstance(fig, go.Figure), f'fig is of type {type(fig)}.'
         if not os.path.isdir(log_dir):

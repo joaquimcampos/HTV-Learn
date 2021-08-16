@@ -97,6 +97,7 @@ class Plot(BasePlot):
                 'train', 'valid', or 'test'
             marker_size (float):
                 marker size for observation points.
+
         Returns:
             A plotly.graph_objects.Scatter3D object.
         """
