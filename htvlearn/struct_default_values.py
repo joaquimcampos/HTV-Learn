@@ -22,8 +22,7 @@ default_values = {
     'lsize': 256,
     'C_init': 'zero',  # coefficient initialization
     # HTV minimization algorithm
-    'admm_iter': 200000,
-    'sigma_rule': 'constant',
+    'admm_iter': 100000,
     # RBF
     'eps': 15,  # kernel size
     # Neural Net
@@ -76,7 +75,6 @@ structure = {
         'lmbda': None,
         'model_name': None,
         'admm_iter': None,
-        'sigma_rule': None,
         'verbose': None
     },
     'rbf': {

@@ -118,14 +118,6 @@ def get_arg_parser():
         help='Number of admm iterations. '
         f'(default: {default_values["admm_iter"]})')
 
-    parser.add_argument(
-        '--sigma_rule',
-        type=str,
-        choices=['constant', 'same', 'inverse'],
-        help='Rule to set step size for g proximal in admm; '
-        'either constant or same or inverse of lmbda. '
-        f'(default: {default_values["sigma_rule"]})')
-
     # RBF
     parser.add_argument(
         '--eps',

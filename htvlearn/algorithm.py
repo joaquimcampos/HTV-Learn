@@ -16,7 +16,6 @@ class Algorithm():
                  model_name,
                  lmbda,
                  admm_iter=100000,
-                 sigma_rule='same',
                  verbose=False,
                  **kwargs):
         """
@@ -36,7 +35,6 @@ class Algorithm():
         self.model_name = model_name
         self.lmbda = lmbda
         self.admm_iter = admm_iter
-        self.sigma_rule = sigma_rule
         self.verbose = verbose
 
         # log_step for admm iterations
@@ -140,15 +138,7 @@ class Algorithm():
         # Estimated operator norm, add 10 percent for some safety margin
         op_norm = 1.1 * odl.power_method_opnorm(stack_op, maxiter=1000)
 
-        if self.sigma_rule == 'constant':
-            sigma = 2.0
-        elif self.sigma_rule == 'same':
-            sigma = self.lmbda
-        elif self.sigma_rule == 'inverse':
-            sigma = 1. / self.lmbda
-        else:
-            raise ValueError(f'sigma rule "{self.sigma_rule}" is invalid.')
-
+        sigma = 2.0
         tau = sigma / op_norm**2  # Step size for f.proximal
 
         if self.verbose:
