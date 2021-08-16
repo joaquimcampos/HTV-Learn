@@ -27,7 +27,6 @@ def plot_data(args):
     plot = Plot(data_obj, **plot_params)
     plot.plot_delaunay(data_obj.cpwl,
                        observations=True,
-                       top=False,
                        color='normal')
 
 

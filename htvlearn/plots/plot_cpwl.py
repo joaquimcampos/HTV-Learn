@@ -6,8 +6,14 @@ from htvlearn.plots.base_plot import BasePlot
 
 
 class Plot(BasePlot):
+
     def __init__(self, data_obj=None, **plot_params):
-        """ """
+        """
+        Args:
+            data_obj (Data):
+                None (if not plotting data samples) or
+                object of class Data (see htvlearn.data).
+        """
         super().__init__(data_obj=data_obj, **plot_params)
 
     def plot_delaunay(self,
@@ -17,18 +23,31 @@ class Plot(BasePlot):
                       opaque=True,
                       filename='trisurf_delaunay',
                       **kwargs):
-        """ """
+        """
+        Plot a several Delaunay objects from a list.
+
+        Args:
+            delaunay_obj_list (Delaunay):
+                list of Delaunay objects (see htvlearn.delaunay).
+            observations (bool):
+                True if plotting data observations.
+            color (str):
+                Plot colors according to simplex normals (color="normal")
+                or mean height of vertices (color="z").
+            opaque (bool):
+                If True, ground truth is made opaque
+                (if True, might make some observations non-visible).
+            filename (str):
+                Figure filename.
+        """
         specs = [[{'type': 'scene'}] * len(delaunay_obj_list)]
         num_subplots = len(delaunay_obj_list)
         fig = make_subplots(cols=num_subplots,
                             specs=specs,
                             shared_xaxes=True,
                             shared_yaxes=True)
-        data = []
         if observations:
-            data = self.add_observations_plot(data, **kwargs)
-            fig.add_trace(data[0], row=1, col=1)
-            # fig['data'][0].update(opacity=1)
+            fig.add_trace(self.get_observations_plot(**kwargs), row=1, col=1)
 
         for i, delaunay in enumerate(delaunay_obj_list):
             if not isinstance(delaunay, Delaunay):
@@ -41,13 +60,15 @@ class Plot(BasePlot):
                                      plot_edges=False)
 
             if color == 'normal':
-                # affine coefficients of each unique triangle
+                # affine coefficients of each simplex
                 color_list = self.get_normal_facecolor(
                     delaunay.tri.simplices_affine_coeff)
             elif color == 'z':
                 z_mean = \
                     delaunay.tri.values[delaunay.tri.simplices].mean(axis=1)
                 color_list = self.map_array2color(z_mean)
+            else:
+                raise ValueError(f'color {color} should be "normal" or "z".')
 
             trisurf_fig = ff.create_trisurf(z=delaunay.tri.values,
                                             color_func=color_list,
@@ -64,27 +85,23 @@ class Plot(BasePlot):
                       num_subplots=num_subplots,
                       **kwargs)
 
-    def verify_data_obj(self):
-        """ Verify that a data object exists
-        """
-        if self.data is None:
-            raise ValueError('A data object does not exist.')
-
-    def add_observations_plot(self,
-                              plot_data,
+    def get_observations_plot(self,
                               mode='train',
                               marker_size=2,
                               **kwargs):
-        """ Add observations plot to plot_data
+        """
+        Get observations plot.
 
         Args:
-            marker_size: marker size for observation points.
+            mode (str):
+                'train', 'valid', or 'test'
+            marker_size (float):
+                marker size for observation points.
+        Returns:
+            A plotly.graph_objects.Scatter3D object.
         """
         assert mode in ['train', 'valid', 'test']
-
         self.verify_data_obj()
-        if self.verbose is True:
-            print('Adding observations plot.')
 
         data_dict = {
             'train': self.data.train,
@@ -92,14 +109,11 @@ class Plot(BasePlot):
             'test': self.data.test
         }[mode]
 
-        x_std = data_dict['input'].cpu().numpy()
-        z = data_dict['values'].cpu().numpy()
+        input = data_dict['input'].cpu().numpy()
+        values = data_dict['values'].cpu().numpy()
 
-        observations = self.get_scatter3d(x=x_std[:, 0],
-                                          y=x_std[:, 1],
-                                          z=z,
-                                          color='black',
+        observations = self.get_scatter3d(x=input[:, 0],
+                                          y=input[:, 1],
+                                          z=values,
                                           marker_size=marker_size)
-        plot_data.append(observations)
-
-        return plot_data
+        return observations

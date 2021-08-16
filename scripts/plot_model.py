@@ -67,7 +67,6 @@ def plot_model(args):
         plot = Plot(data_obj, **params['plots'])
         plot.plot_delaunay(data_obj.cpwl,
                            observations=True,
-                           top=False,
                            color='normal')
         # plot.plot_delaunay([], observations=True, top=False, color='normal')
 

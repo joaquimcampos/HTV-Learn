@@ -2,42 +2,57 @@ import os
 import copy
 import numpy as np
 import plotly.graph_objects as go
-import chart_studio
 import plotly.io as pio
 import matplotlib.cm as cm
 
-chart_studio.tools.set_credentials_file(username='jcampos',
-                                        api_key='UDIpS9sd0Gd9rHbUcf3e')
+from htvlearn.data import Data
 
 
 class BasePlot():
 
-    colorscale = 'coolwarm'  # 'Blues_r' # 'Greys' # 'Greys_r' # 'Blues_r'
+    colorscale = 'coolwarm'  # default colorscale
 
     def __init__(self,
                  data_obj=None,
                  log_dir=None,
-                 view=None,
-                 verbose=False,
                  **kwargs):
         """
         Args:
-            log_dir: if not None, log directory for html images
-            view: plot view
+            data_obj (Data):
+                None (if not plotting data samples) or
+                object of class Data (see htvlearn.data).
+            log_dir (str):
+                Log directory for html images. If None, the images are only
+                shown but not saved in html format.
         """
         self.data = data_obj
         self.log_dir = log_dir
-        self.view = view
-        self.verbose = verbose
 
         if self.log_dir is not None and not os.path.isdir(self.log_dir):
             raise NotADirectoryError(
                 f'log_dir "{self.log_dir}" is not a valid directory')
 
+    def verify_data_obj(self):
+        """ Verify that a data object exists and is valid"""
+        if self.data is None:
+            raise ValueError('A data object does not exist.')
+        elif not isinstance(self.data, Data):
+            raise ValueError(f'data_obj is of type {type(self.data)}.')
+
     @classmethod
     def map_val2color(cls, val, vmin, vmax, colorscale=None):
-        """ Map the normalized value "val" to a corresponding
-        color in the colormap.
+        """
+        Map a value to a color in the colormap.
+
+        Args:
+            val (float):
+                value in [vmin, vmax] to map to color.
+            vmin, vmax (float):
+                min and max ranges for val.
+            colorscale (str):
+                matplotlib colorscale or None (use default).
+        returns:
+            rgb color.
         """
         colorsc = colorscale if colorscale is not None else cls.colorscale
         cmap = cm.get_cmap(colorsc)
@@ -52,27 +67,22 @@ class BasePlot():
             .format(int(G * 255 + 0.5)) +\
             ',' + '{:d}'.format(int(B * 255 + 0.5)) + ')'
 
-    @staticmethod
-    def map_frac_float_to_rgb(array):
-        """ Map colors from 3 values [0,1] to RGB
-        """
-        if not array.shape[1] == 3:
-            raise ValueError(f'array has #cols {array.shape[1]}. Should be 3.')
-
-        color_list = []
-        for row in array:
-            color_list += [
-                'rgb(' + '{:d}'.format(int(row[0] * 255 + 0.5)) + ',' +
-                '{:d}'.format(int(row[1] * 255 + 0.5)) + ',' +
-                '{:d}'.format(int(row[2] * 255 + 0.5)) + ')'
-            ]
-
-        return np.array(color_list)
-
     @classmethod
     def map_val2color2d(cls, val, vmin, vmax):
-        """ Map the normalized 2D value to a corresponding R, B channel.
-        val, vmin, vmax: 2d array
+        """
+        Map a 2D value to an rgb color. The R and G channels have
+        an independent and direct correspondence to each element in
+        the 2D value. The B channel is kept fixed.
+
+        Args:
+            val (float):
+                value s.t. val[i] in [vmin[i], vmax[i]], i=1,2,
+                to be mapped to an rgb color. The R, G channels are set
+                by val.
+            vmin, vmax (2d array):
+                min and max ranges for each element in val.
+        Returns:
+            rgb color.
         """
         if vmin[0] > vmax[0] or vmin[1] > vmax[1]:
             raise ValueError('incorrect relation between vmin and vmax')
@@ -92,7 +102,16 @@ class BasePlot():
 
     @classmethod
     def map_array2color(cls, array, min=None, max=None):
-        """ """
+        """
+        Map an array of values to colors.
+
+        array (1d array):
+            array of values to map to colors. size: (N,)
+        min, max (float):
+            If not None, set the ranges for the values in array.
+        Returns:
+            1d array of rgb colors. size: (N,)
+        """
         if min is None:
             min = array.min()
         if max is None:
@@ -102,122 +121,99 @@ class BasePlot():
 
     @classmethod
     def map_array2color2d(cls, array, min=None, max=None):
-        """ """
+        """
+        Map a 2D array of values to colors.
+
+        array (2d array):
+            array of values to map to colors. size: (N x 2).
+        min, max (2d array):
+            If not None, sets the ranges for the values in array.
+        Returns:
+            1d array of rgb colors. size: (N,)
+        """
+        if array.shape[1] != 2:
+            raise ValueError(f"array has shape {array.shape}.")
         if min is None:
+            if min.shape != (2, ):
+                raise ValueError(f'min has shape {min.shape}')
             min = array.amin(axis=0)
         if max is None:
+            if max.shape != (2, ):
+                raise ValueError(f'max has shape {max.shape}')
             max = array.amax(axis=0)
 
         return np.array([cls.map_val2color2d(val, min, max) for val in array])
 
     @classmethod
-    def get_z_facecolor(cls, tri_z):
-        """ Get facecolor according to the mean of the
-        heights of the triangle vertices.
+    def get_normal_facecolor(cls, affine_coeff, max=None):
         """
-        # mean of heights of vertices for each triangle
-        tri_zmean = tri_z.mean(1).numpy()
-        min_tri_zmean = np.min(tri_zmean)
-        max_tri_zmean = np.max(tri_zmean)
+        Get facecolor of simplices according to their normals.
 
-        facecolor = cls.map_array2color(tri_zmean,
-                                        min=min_tri_zmean,
-                                        max=max_tri_zmean)
-
-        return facecolor
-
-    @classmethod
-    def get_normal_facecolor(cls, affine_coeff):
-        """ Get facecolor of triangles according to
-        their normals.
+        Args:
+            affine_coeff (array):
+                affine coefficients of the simplices.
+                size: (number of simplices, 3).
+            max (2d array):
+                If not None, sets the max ranges for the values in
+                affine_coeff[:, 0:2].
+        Returns:
+            facecolor (1d array):
+                1d array of rgb colors whose size is the number of simplices.
         """
-        max = np.array([1.75, 1.75])
+        if not affine_coeff.shape[1] == 3:
+            raise ValueError(f"affine_coeff has shape {affine_coeff.shape}.")
+        if max is None:
+            max = np.array([1.75, 1.75])
         facecolor = \
             cls.map_array2color2d(-affine_coeff[:, 0:2], min=-max, max=max)
 
         return facecolor
 
-    def get_x_facecolor(self, x_lat):
-        """ Get facecolors according to mean height of vertices
-        of unique triangles where each point in x_lat lives.
-        """
-        facecolor = self.get_z_facecolor(self.lat.unique_triangles_values)
-
-        idx_unique_triangles, _ = \
-            self.lat.check_my_triangle(x_lat, get='idx_unique')
-        color = facecolor[idx_unique_triangles.numpy()]
-
-        return color
-
     @staticmethod
-    def get_scatter3d(x, y, z, color, cmax=None, marker_size=2):
-        """ """
+    def get_scatter3d(x, y, z, marker_size=2):
+        """
+        Get a scatter 3D plot (f: \R^2 \to \R)
+
+        Args:
+            x, y (1d array):
+                positions of the samples.
+            z (1d array):
+                values of the samples.
+        Returns:
+            A plotly.graph_objects.Scatter3D object.
+        """
         data = go.Scatter3d(x=x,
                             y=y,
                             z=z,
                             mode='markers',
                             marker=dict(size=marker_size,
-                                        color=color,
-                                        cmax=cmax),
+                                        color='black'),
                             opacity=0.8)
 
         return data
-
-    @classmethod
-    def get_surface3d(cls, x, y, z, surfcolor=None, **kwargs):
-        """ """
-        colorscale = cls.colorscale if surfcolor is None else None
-        if surfcolor is not None:
-            dcolor = surfcolor.max() - surfcolor.min()
-            cmin = surfcolor.min() - 0.2 * dcolor
-            cmax = surfcolor.max() + 0.2 * dcolor
-            # cmin, cmax = -1, 1
-        else:
-            dy = z.max() - z.min()
-            cmin = z.min() - 0.5 * dy
-            cmax = z.max() + 0.3 * dy
-
-        data = go.Surface(
-            x=x,
-            y=y,
-            z=z,
-            surfacecolor=surfcolor,
-            # cauto=True,
-            cmin=cmin,
-            cmax=cmax,
-            colorscale=colorscale,
-            reversescale=True)
-
-        return data
-
-    @staticmethod
-    def get_line(x, y, z):
-        """ """
-        line = go.Scatter3d(x=x,
-                            y=y,
-                            z=z,
-                            marker=dict(size=1,
-                                        symbol='circle',
-                                        color="rgb(84,48,5)"),
-                            line=dict(color="rgb(84,48,5)", width=8),
-                            opacity=0.9)
-
-        return line
 
     def plot_fig(self,
                  fig,
                  filename=None,
                  num_subplots=1,
                  view=None,
-                 top=False,
                  **kwargs):
-        """ """
-        if self.view is not None:
-            view = self.view
-        elif view is None:
-            view = '3D'  # default view
+        """
+        Plot figure.
 
-        assert view in ['up', 'side', '3D', '3D_2']
+        Args:
+            fig:
+                instance of plotly.graph_objects.Figure to plot.
+            filename (str):
+                Figure filename.
+            num_subplots (int):
+                Number of figure subplots.
+            view (str):
+                If None, a default view is used.
+                Otherwise can be set to "up" "side".
+        """
+        assert isinstance(fig, go.Figure), f'fig is of type {type(fig)}.'
+        assert view in [None, 'up', 'side'], f'view "{view}" is invalid.'
 
         ax_dict = dict(linecolor='#000000',
                        linewidth=4,
@@ -228,7 +224,6 @@ class BasePlot():
                        gridwidth=0.3,
                        title='',
                        showbackground=True)
-        # title=dict(font=dict(size=35), linecolor='#FFFFFF')
 
         fig_dict = dict(
             scene_aspectmode='data',
@@ -240,21 +235,15 @@ class BasePlot():
             font=dict(size=30),
         )
 
-        if top is True:
-            fig_dict['scene']['zaxis']['visible'] = False
-            for ax in ['xaxis', 'yaxis']:
-                fig_dict['scene'][ax]['showbackground'] = False
-
-        if view == 'side':
-            fig_dict['scene']['camera']['eye'] = dict(x=1.2, y=0.3, z=0.4)
-        elif view == '3D':
-            fig_dict['scene']['camera']['eye'] = dict(x=1.5, y=1.9, z=1.7)
-        elif view == '3D_2':
-            fig_dict['scene']['camera']['eye'] = dict(x=1.0, y=-2.0, z=0.3)
-        elif view == 'up':
+        if view == 'up':
             fig_dict['scene']['zaxis']['visible'] = False
             fig_dict['scene']['camera']['eye'] = dict(x=0, y=0, z=3)
             fig_dict['scene']['camera']['up'] = dict(x=0, y=1, z=0)
+        elif view == 'side':
+            fig_dict['scene']['camera']['eye'] = dict(x=1.2, y=0.3, z=0.4)
+        else:
+            # default
+            fig_dict['scene']['camera']['eye'] = dict(x=1.5, y=1.9, z=1.7)
 
         for i in range(2, num_subplots + 1):
             fig_dict['scene' + str(i)] = fig_dict['scene'].copy()
@@ -267,7 +256,17 @@ class BasePlot():
 
     @staticmethod
     def export_fig(fig, filename, log_dir):
-        """ """
+        """
+        Plot html figure and export to log_dir.
+
+        fig:
+            instance of plotly.graph_objects.Figure to plot.
+        filename (str):
+            Figure filename.
+        log_dir (str):
+            Log directory where figure is exported to.
+        """
+        assert isinstance(fig, go.Figure), f'fig is of type {type(fig)}.'
         if not os.path.isdir(log_dir):
             raise NotADirectoryError(
                 f'log_dir "{log_dir}" is not a valid directory')
