@@ -4,9 +4,12 @@ import odl
 from odl.operator.tensor_ops import MatrixOperator
 
 from htvlearn.operators import Operators
+from htvlearn.data import Data
+from htvlearn.lattice import Lattice
 
 
 class Algorithm():
+    """ Class for the HTV minimization algorithm """
 
     eps = 1e-4  # epsilon to assess sparsity
 
@@ -20,15 +23,22 @@ class Algorithm():
                  **kwargs):
         """
         Args:
-            lattice_obj:
-            data_obj:
-            model_name:
-            lmbda:
-            admm_iter:
-            sigma_rule:
-            verbose:
+            lattice_obj (Lattice):
+                object of lattice type (see htvlearn.lattice)
+            data_obj (Data):
+                object of data type (see htvlearn.data)
+            model_name (str)
+            lmbda (float):
+                regularization weight
+            admm_iter (int):
+                number of admm iterations to run
+            verbose (bool):
+                Print more info.
         """
-        # TODO: Complete Args in docstring
+        if not isinstance(lattice_obj, Lattice):
+            raise ValueError(f'lattice_obj is of type {type(lattice_obj)}.')
+        if not isinstance(lattice_obj, Data):
+            raise ValueError(f'lattice_obj is of type {type(lattice_obj)}.')
         self.lat = lattice_obj
         self.data = data_obj
 
@@ -56,10 +66,6 @@ class Algorithm():
         # results_dict logs the numerical results
         self.results_dict = {}
 
-        self.index_eps = 1e-9  # for get_index_masks()
-        self.sign_atol = 1e-9
-        self.zero_atol = 1e-7
-
     def admm(self):
         """ Learning using ADMM.
 
@@ -68,9 +74,8 @@ class Algorithm():
 
         Where ``H_op`` is the forward operator, ``L_op`` is the regularization
         operator based on the HTV, ``x_values`` are the observations at
-        the x_lat points (in lattice coordinates), ``z`` is the vectorized
-        lattice vertices values (to be updated), which are initialized with
-        current values.
+        the datapoints, ``z`` is the vectorized lattice vertices values
+        (to be updated), which are initialized with the current values.
 
         The problem is rewritten in decoupled form as min_x g(L(z)),
         with a separable sum ``g`` of functionals and the stacked
@@ -107,13 +112,27 @@ class Algorithm():
         self.y_lmbda_admm, self.L_z_admm = self.update_results_dict(z)
 
     def setup_admm(self):
-        """ """
+        """
+        Setup for the admm algorithm.
+
+        Returns:
+            z_odl (odl.set.space.LinearSpaceElement)
+                odl array of values.
+            f, g (odl.solvers.functional.functional.Functional):
+                odl functionals for admm.
+            stack_op:
+                forward and regularization odl linear Operator stacking.
+            tau, sigma (positive float):
+                step sizes for the admm.
+            callback:
+                function called with the current iterate after each iteration.
+        """
         # construct H, L operators
         self.op = Operators(self.lat, self.input, lmbda=self.lmbda)
 
         # --- Set up the inverse problem --- #
 
-        # TODO: Construct operator yourself!!!!
+        # TODO: Construct matrix-free operator
         # odlgroup: [MatrixOperator] is in general a rather slow
         # and memory-inefficient approach, and users are recommended
         # to use other alternatives if possible.
@@ -134,7 +153,6 @@ class Algorithm():
         # We don't use the f functional, setting it to zero
         f = odl.solvers.ZeroFunctional(stack_op.domain)
 
-        # --- Select parameters and solve using LADMM --- #
         # Estimated operator norm, add 10 percent for some safety margin
         op_norm = 1.1 * odl.power_method_opnorm(stack_op, maxiter=1000)
 
@@ -144,14 +162,7 @@ class Algorithm():
         if self.verbose:
             print('admm (tau, sigma): ({:.3f}, {:.4f})'.format(tau, sigma))
 
-        callback = None
-        if self.verbose and False:
-            # Optionally pass a callback to the solver to display
-            # intermediate results
-            callback = (odl.solvers.CallbackPrintIteration(step=2000) &
-                        odl.solvers.CallbackShow(step=10))
-        else:
-            callback = (odl.solvers.CallbackPrintIteration(step=2000))
+        callback = (odl.solvers.CallbackPrintIteration(step=2000))
 
         z = self.lat.flattened_C.numpy()
         rn_space = odl.rn(z.shape[0], dtype='float32')
@@ -160,8 +171,14 @@ class Algorithm():
         return z_odl, f, g, stack_op, tau, sigma, callback
 
     def update_results_dict(self, z):
-        """ """
-        # construct H, L operators. L without weight multiplication.
+        """
+        Update the "results" dictionary.
+
+        Args:
+            z (1d array):
+                new array of lattice parameters.
+        """
+        # construct H, L operators. L without lmbda multiplication.
         self.op = Operators(self.lat, self.input)
 
         # data fildelity
@@ -193,29 +210,16 @@ class Algorithm():
 
         return y_lmbda, L_z
 
-    def get_index_masks(self, L_z, epsilon_tol=True):
-        """ Gets indexes where sign(L.dot(z)) = 0/1/-1
-
-        epsilon_tol: if true, a tolerance of epsilon is used for zeros.
-        """
-        if epsilon_tol is True:
-            I_pos = np.where(L_z > self.index_eps)[0]
-            I_neg = np.where(L_z < -self.index_eps)[0]
-            I_zero = np.where(np.absolute(L_z) <= self.index_eps)[0]
-        else:
-            I_pos = np.where(L_z > 0)[0]
-            I_neg = np.where(L_z <= 0)[0]
-            I_zero = np.empty_like(I_pos, shape=(0, ))
-
-        assert (I_zero.shape[0] + I_pos.shape[0] + I_neg.shape[0]) \
-            == L_z.shape[0], \
-            f'{I_zero.shape[0]}, {I_pos.shape[0]}, ' \
-            f'{I_neg.shape[0]}, {L_z.shape[0]}.'
-
-        return I_zero, I_pos, I_neg
-
     def multires_admm(self):
-        """ multires_admm """
+        """
+        Perform multiresolution admm.
+
+        Returns:
+            results_dict (dict):
+                dictionary with saved results.
+            lattice_dict (dict):
+                dictionary with saved lattice states across iterations.
+        """
 
         print('\n\nStart multires admm.')
         lattice_dict = self.lat.save('init')
