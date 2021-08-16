@@ -118,6 +118,12 @@ def get_arg_parser():
         help='Number of admm iterations. '
         f'(default: {default_values["admm_iter"]})')
 
+    parser.add_argument(
+        '--simplex',
+        action='store_true',
+        help='Perform simplex after admm. '
+             f'(default: {default_values["verbose"]})')
+
     # RBF
     parser.add_argument(
         '--eps',
@@ -241,6 +247,14 @@ def verify_params(params):
     for key, value in default_values.items():
         if key not in params or params[key] is None:
             params[key] = value  # param which was not set by user
+
+    if params['dataset_name'] == 'pyramid':
+        params['simplex'] = True  # force simplex=True
+
+    elif 'face' in params['dataset_name']:
+        if params['simplex'] is True:
+            print('--simplex being overwritten to False.')
+            params['simplex'] = False  # force simplex=False
 
     return params
 
