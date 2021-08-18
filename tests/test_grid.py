@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from grid import Grid
+from htvlearn.grid import Grid
 
 
 @pytest.fixture(scope='module', params=[True, False])
