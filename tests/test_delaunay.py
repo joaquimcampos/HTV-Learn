@@ -3,19 +3,14 @@ import numpy as np
 import torch
 import time
 
-from delaunay import Delaunay
-from plots.plot_cpwl import Plot
-from data import (
+from htvlearn.delaunay import Delaunay
+from htvlearn.plots.plot_cpwl import Plot
+from htvlearn.data import (
     BoxSpline,
-    NormalizedBoxSpline,
-    DistortedBoxSpline,
-    Pyramid,
+    SimplicialSpline,
     CutPyramid,
-    SoftPyramid,
     SimpleJunction,
-    AnotherJunction,
-    AssymetricSimpleJunction,
-    RealData
+    DistortedGrid
 )
 
 
@@ -28,19 +23,13 @@ def set_seed(request):
     np.random.seed(int(seed))
 
 
-toy_dataset_list = \
-    [SimpleJunction, AnotherJunction, AssymetricSimpleJunction] + \
-    [BoxSpline,
-     NormalizedBoxSpline,
-     Pyramid,
-     CutPyramid,
-     SoftPyramid,
-     ]
+# toy datasets that have an htv attribute
+toy_dataset_list = [BoxSpline, CutPyramid, SimpleJunction]
 dataset_dict = {
-    'simple_junction': [SimpleJunction],
     'toy': toy_dataset_list,
-    'real': [RealData],
-    'all': toy_dataset_list + [RealData] + [DistortedBoxSpline]
+    'all': toy_dataset_list + [SimplicialSpline, DistortedGrid],
+    'simple_junction': [SimpleJunction],
+    'distorted_grid': [DistortedGrid]
 }
 
 # receives dataset as parameter
@@ -91,7 +80,7 @@ class TestDelaunay:
     def test_exact_grad_trace_htv(self, dataset):
         """ """
         if dataset['name'].endswith('Junction') or \
-                dataset['name'].endswith('RealData'):
+                dataset['name'].endswith('DistortedGrid'):
             cpwl = Delaunay(**dataset)
         else:
             cpwl = Delaunay(**dataset, add_extreme_points=True)
@@ -108,7 +97,7 @@ class TestDelaunay:
     def test_lefkimiattis_HTV(self, dataset):
         """ """
         if dataset['name'].endswith('Junction') or \
-                dataset['name'].endswith('RealData'):
+                dataset['name'].endswith('DistortedGrid'):
             cpwl = Delaunay(**dataset)
         else:
             cpwl = Delaunay(**dataset, add_extreme_points=True)
@@ -125,7 +114,7 @@ class TestDelaunay:
     def test_lefkimiattis_trace_HTV(self, dataset):
         """ """
         if dataset['name'].endswith('Junction') or \
-                dataset['name'].endswith('RealData'):
+                dataset['name'].endswith('DistortedGrid'):
             cpwl = Delaunay(**dataset)
         else:
             cpwl = Delaunay(**dataset, add_extreme_points=True)
@@ -142,7 +131,7 @@ class TestDelaunay:
     def test_exact_grad_schatten_HTV(self, dataset):
         """ """
         if dataset['name'].endswith('Junction') or \
-                dataset['name'].endswith('RealData'):
+                dataset['name'].endswith('DistortedGrid'):
             cpwl = Delaunay(**dataset)
         else:
             cpwl = Delaunay(**dataset, add_extreme_points=True)
@@ -154,21 +143,6 @@ class TestDelaunay:
               .format(exact_grad_schatten_htv, exact_htv))
 
         assert not np.allclose(exact_grad_schatten_htv, exact_htv, rtol=1e-3)
-
-    @pytest.mark.parametrize("dataset", dataset_dict["real"], indirect=True)
-    def test_evaluate(self, dataset):
-        """ """
-        cpwl = Delaunay(**dataset, add_extreme_points=True)
-        grid = cpwl.get_grid(h=0.01)
-        t1 = time.time()
-        z, x_grad = cpwl.evaluate_with_grad(grid.x)
-        t2 = time.time()
-        z_bar = cpwl.evaluate_bar(grid.x)
-        t3 = time.time()
-        print('affine_coeff/bar time: {:.3f}'
-              .format((t2 - t1) / (t3 - t2)))
-
-        assert np.all(np.allclose(z, z_bar))
 
     @pytest.mark.parametrize("dataset",
                              dataset_dict["simple_junction"],
@@ -198,7 +172,26 @@ class TestDelaunay:
              SimpleJunction.a1_affine_coeff[np.newaxis, 0:2]),
             np.zeros_like(x_grad))
 
-    @pytest.mark.parametrize("dataset", dataset_dict["real"], indirect=True)
+    @pytest.mark.parametrize("dataset",
+                             dataset_dict["distorted_grid"],
+                             indirect=True)
+    def test_evaluate(self, dataset):
+        """ """
+        cpwl = Delaunay(**dataset, add_extreme_points=True)
+        grid = cpwl.get_grid(h=0.01)
+        t1 = time.time()
+        z, x_grad = cpwl.evaluate_with_grad(grid.x)
+        t2 = time.time()
+        z_bar = cpwl.evaluate_bar(grid.x)
+        t3 = time.time()
+        print('affine_coeff/bar time: {:.3f}'
+              .format((t2 - t1) / (t3 - t2)))
+
+        assert np.all(np.allclose(z, z_bar))
+
+    @pytest.mark.parametrize("dataset",
+                             dataset_dict["distorted_grid"],
+                             indirect=True)
     def test_convex_hull_extreme_points(self, dataset):
         """ """
         cpwl = Delaunay(**dataset, add_extreme_points=True)

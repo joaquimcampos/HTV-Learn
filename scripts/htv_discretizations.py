@@ -7,10 +7,9 @@ import matplotlib.pyplot as plt
 
 from htvlearn.delaunay import Delaunay
 from htvlearn.data import (
+    SimplicialSpline,
     SimpleJunction,
-    AnotherJunction,
-    DistortedBoxSpline,
-    RealData
+    DistortedGrid
 )
 from htvlearn.htv_utils import add_date_to_filename
 
@@ -20,14 +19,12 @@ def htv_discretizations(args):
     Args:
         args: arguments from argparser
     """
-    if args.dataset == 'SimpleJunction':
+    if args.dataset == 'SimplicialSpline':
+        dataset = SimplicialSpline
+    elif args.dataset == 'SimpleJunction':
         dataset = SimpleJunction
-    elif args.dataset == 'AnotherJunction':
-        dataset = AnotherJunction
-    elif args.dataset == 'DistortedBoxSpline':
-        dataset = DistortedBoxSpline
-    elif args.dataset == 'RealData':
-        dataset = RealData
+    elif args.dataset == 'DistortedGrid':
+        dataset = DistortedGrid
     else:
         raise ValueError(f'Dataset {args.dataset} does not exist here...')
 
@@ -38,7 +35,7 @@ def htv_discretizations(args):
     }
 
     # add extreme points flag
-    aep = True if args.dataset == 'DistortedBoxSpline' else False
+    aep = True if args.dataset == 'SimplicialSpline' else False
 
     cpwl = Delaunay(**dataset_dict, add_extreme_points=aep)
     exact_htv = cpwl.get_exact_HTV()
@@ -124,8 +121,9 @@ if __name__ == "__main__":
         '--dataset',
         type=str,
         choices=[
-            'SimpleJunction', 'AnotherJunction',
-            'DistortedBoxSpline', 'RealData'
+            'SimplicialSpline',
+            'SimpleJunction',
+            'DistortedGrid'
         ],
         default='SimpleJunction',
         help='')

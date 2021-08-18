@@ -10,12 +10,13 @@ from htvlearn.grid import Grid
 
 
 class Hex():
-    """ Hexagonal lattice vectors """
-    v1 = np.array([1., 0.])
-    v2 = np.array([0.5, math.sqrt(3) / 2])
+    """Hexagonal lattice vectors"""
+    v1 = Lattice.hexagonal_matrix[:, 0].numpy()
+    v2 = Lattice.hexagonal_matrix[:, 1].numpy()
 
 
 class BoxSpline():
+    """Three-directional hexagonal box spline"""
     center_points = np.array([0., 0.])
     border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
                               -Hex.v1, -Hex.v2, -Hex.v2 + Hex.v1])
@@ -24,13 +25,8 @@ class BoxSpline():
     htv = 12
 
 
-class NormalizedBoxSpline(BoxSpline):
-    values = BoxSpline.values.copy()
-    values[0] = 1.
-    htv = 12 / (math.sqrt(3) / 2)
-
-
-class DistortedBoxSpline():
+class SimplicialSpline():
+    """Simplicial spline with randomly positioned vertices"""
     np.random.seed(3)
     center_points = np.array([0., 0.]) + np.random.uniform(-0.2, 0.2, (2, ))
     border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
@@ -40,72 +36,64 @@ class DistortedBoxSpline():
     values = np.array([math.sqrt(3) / 2, 0., 0., 0., 0., 0., 0.])
 
 
-class Pyramid():
+class CutPyramid():
+    """Pyramid with flat top"""
     points = np.vstack((BoxSpline.center_points,
                         BoxSpline.border_points,
                         2 * BoxSpline.border_points,
                         3 * BoxSpline.border_points))
-    values = np.array([2., 1., 1., 1., 1., 1., 1.,
+    values = np.array([1., 1., 1., 1., 1., 1., 1.,
                        0., 0., 0., 0., 0., 0.,
                        0., 0., 0., 0., 0., 0., ])
     htv = 16 * math.sqrt(3)
 
 
-class CutPyramid(Pyramid):
-    values = Pyramid.values.copy()
-    values[0] = 1.
-
-
-class SoftPyramid(Pyramid):
-    values = Pyramid.values.copy()
-    values[7:13] = 0.5
-    values[13::] = 0.
-
-
 class SimpleJunction():
+    """A simple two-polytope junction"""
     points = np.array([[0., 0.], [1., 0.], [0., 1.], [1., 1.],
                        [0., 3. / 4], [1., 1. / 4]])
     values = np.array([0., 2. / 3, 2. / 3, 0., 1., 1.])
-    # gradients
+    # gradients of each polytope
     a1_affine_coeff = np.array([2. / 3, 4. / 3., 0.])
     a2_affine_coeff = np.array([-2. / 3, -4. / 3., 2.])
     htv = 10. / 3
 
 
-class AnotherJunction():
-    points = np.array([[0., 0.], [1., 0.], [0., 1.], [1., 1.]])
-    values = np.array([0., 1., 1., 0.])
-    htv = 4
-
-
-class AssymetricSimpleJunction(SimpleJunction):
-    values = np.array([1., 1., 2. / 3, 0., 1., 1.])
-    a1_affine_coeff = np.array([0., 0., 0.])
-    htv = 5. / 3
-
-
 def init_distorted_grid(size_=(3, 3), range_=(-1, 1)):
-    """ """
+    """
+    Initializes a distorted grid.
+
+    Args:
+        size (2-tuple): grid size.
+        range (2-tuple):
+            range of points in each dimension before distortion.
+
+    Returns:
+        points (np.array):
+            distorted grid points. size: (size_[0]*size_[1]) x 2.
+    """
     assert isinstance(size_, tuple)
     assert len(size_) == 2
-    u = np.linspace(*range_, size_[0]) * 1.
-    v = np.linspace(*range_, size_[1]) * 1.
-    u, v = np.meshgrid(u, v)
+    # initialize undistorted grid points (u, v)
+    vec1 = np.linspace(*range_, size_[0]) * 1.
+    vec2 = np.linspace(*range_, size_[1]) * 1.
+    u, v = np.meshgrid(vec1, vec2)
     u = u.flatten()
     v = v.flatten()
 
+    # add noise to the interior vertices of the grid
     mask = np.ma.mask_or(np.abs(u) == u.max(), np.abs(v) == v.max())
-    # noisy
-    x, y = u, v
-    for vec in [x, y]:
-        noise = (np.random.rand(*u.shape) - 0.5) * (u[1] - u[0])
-        # don't add noise to boundary vertices
-        vec[~mask] = vec[~mask] + noise[~mask]
+    points = np.hstack((u[:, np.newaxis], v[:, np.newaxis])).copy()
+    # the noise is scaled according to the grid spacing
+    noise = (np.random.rand(*points.shape) - 0.5) * (u[1] - u[0])
+    # don't add noise to boundary vertices
+    points[~mask] = points[~mask] + noise[~mask]
 
-    return np.hstack((x[:, np.newaxis], y[:, np.newaxis]))
+    return points
 
 
-class RealData:
+class DistortedGrid:
+    """Dataset with random values in a distorted random grid"""
     points = init_distorted_grid(size_=(3, 3))
     values = (np.random.rand(points.shape[0], ) - 0.5)
 
