@@ -13,7 +13,22 @@ class Grid:
                  to_numpy=True,
                  to_float32=False,
                  **kwargs):
-        """ 2D grid
+        """
+        Class for 2D grids.
+
+        Args:
+            x1_min, x1_max (float):
+                ranges for x coordinate.
+            x2_min, x2_max (float)
+                ranges for y coordinate.
+            h (float):
+                grid spacing.
+            square (bool):
+                if True, make grid square (overrides x2_min, x2_max).
+            to_numpy (bool):
+                if True, convert grid from torch.tensor to np.array.
+            to_float32 (bool):
+                if True, convert grid from float64 to float32.
         """
         self.square = square
         self.x1_min = x1_min
@@ -26,21 +41,17 @@ class Grid:
 
         self.generate_grid()
 
-    @property
-    def is_int(self):
-        """ """
-        if isinstance(self.x1_min, int) and isinstance(self.h, int) and \
-                isinstance(self.x2_min, int) and isinstance(self.h, int):
-            return True
-        return False
-
     def generate_grid(self):
-        """ Generates a 2D grid and returns a list of (x1,x2) grid points
+        """
+        Generates a 2D grid.
 
-        Returns:
-            x: list of (x1,x2) grid points (size (m, 2))
-            x1_vec, x2_vec: vectors that originated grid.
-            mesh_size: size of meshgrid tensor.
+        Saves:
+            x:
+                grid points (size (m, 2))
+            x1_vec, x2_vec:
+                vectors that originated grid.
+            meshgrid_size:
+                size of the meshgrid tensor.
         """
         self.x1_vec = torch.tensor(
             list(frange(self.x1_min, self.x1_max, self.h)))

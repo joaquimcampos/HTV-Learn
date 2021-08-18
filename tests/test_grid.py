@@ -20,6 +20,5 @@ class TestGrid:
     def test_grid(self, grid):
         assert grid.x.shape[0] == np.prod(np.array(grid.meshgrid_size))
         assert grid.x.shape[1] == 2
-        assert grid.is_int is False
         if grid.square is True:
             assert grid.x1_vec.shape == grid.x2_vec.shape
