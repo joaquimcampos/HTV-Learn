@@ -99,6 +99,8 @@ class DistortedGrid:
 
 
 class Data():
+    """Data class for algorithms"""
+
     def __init__(self,
                  data_from_ckpt=None,
                  dataset_name=None,
@@ -112,25 +114,36 @@ class Data():
                  **kwargs):
         """
         Args:
-            data_from_ckpt:
-            dataset_name:
-            num_train:
-            data_dir:
-            valid_fraction:
-            test_as_valid:
-            noise_ratio:
-            seed:
-            verbose:
+            data_from_ckpt (dict):
+                dictionary with 'train', 'valid' and 'test' data loaded
+                from a checkpoint.
+            dataset_name (str)
+            num_train (int):
+                number of training+valid samples. The effective number of
+                training samples is a multiple of 1000. Further, if the
+                dataset has gaps the data inside the gaps will also removed.
+            data_dir (int):
+                data directory (for face dataset)
+            valid_fraction (float [0,1]):
+                fraction of num_train samples that is used for validation
+            test_as_valid (bool):
+                if True, use test set in validation.
+            noise_ratio (float >= 0):
+                noise that should be applied to the samples as a fraction of
+                the data range.
+            seed (int):
+                seed for random generation. If negative, no seed is set.
+            verbose (bool):
+                print more info.
         """
-        # TODO: Complete Args in docstring
         self.data_from_ckpt = data_from_ckpt
-
         self.dataset_name = dataset_name
         self.num_train = num_train
 
         if self.data_from_ckpt is None:
-            assert self.dataset_name is not None, 'self.dataset_name is None.'
-            assert self.num_train is not None, 'self.num_train is None.'
+            assert self.dataset_name is not None
+            if not self.dataset_name.startswith('pyramid'):
+                assert self.num_train is not None
 
         self.data_dir = data_dir
         self.valid_fraction = valid_fraction
@@ -139,11 +152,11 @@ class Data():
         self.seed = seed
         self.verbose = verbose
         # if not overwritten, computed in add_noise_to_values()
-        # from self.noise_ratio and delaunay max and min height
+        # from self.noise_ratio and dataset height range
         self.noise_std = None
 
-        # set seeds
         if self.seed >= 0:
+            # set seed
             torch.manual_seed(self.seed)
             torch.cuda.manual_seed_all(self.seed)
             np.random.seed(self.seed)
@@ -152,6 +165,7 @@ class Data():
         self.delaunay = {}  # points and values for delaunay triangulation
 
         if self.data_from_ckpt is not None:
+            # load data from self.data_from_ckpt
             assert 'train' in self.data_from_ckpt
             assert 'valid' in self.data_from_ckpt
             assert 'test' in self.data_from_ckpt
@@ -172,7 +186,7 @@ class Data():
         self.init_data()
 
     def init_data(self):
-        """ """
+        """Initialize cpwl dataset, and train/test/valid sets"""
         if not bool(self.delaunay):
 
             if self.dataset_name.startswith('pyramid'):
@@ -194,9 +208,10 @@ class Data():
 
         if not bool(self.test):
             if not self.cpwl.has_rectangular_range:
-                # generate uniformly distributed samples
-                # in cpwl convex set
-                self.test['input'] = self.generate_uniform_data(3350)
+                # generate uniformly distributed samples in cpwl convex set
+                num_test_samples = 3350
+                self.test['input'] = \
+                    self.generate_random_samples(num_test_samples)
             else:
                 # test set is sampled on a grid inside the convex hull of cpwl
                 self.test['input'] = self.cpwl.get_grid(h=0.01,
@@ -204,10 +219,9 @@ class Data():
                                                         to_float32=True).x
 
             self.test['values'] = self.cpwl.evaluate(self.test['input'])
-
             print(f'nb. of test data points : {self.test["input"].size(0)}')
 
-            if not bool(self.valid) and self.test_as_valid:
+            if (not bool(self.valid)) and (self.test_as_valid is True):
                 self.valid['input'] = self.test['input'].clone()
                 self.valid['values'] = self.test['values'].clone()
 
@@ -215,7 +229,7 @@ class Data():
             # generate num_train_valid_samples uniformly distributed
             # in cpwl convex set
             num_train_valid_samples = int(self.num_train)
-            x = self.generate_uniform_data(num_train_valid_samples)
+            x = self.generate_random_samples(num_train_valid_samples)
 
             # training / validation split indices
             if not self.test_as_valid:
@@ -235,6 +249,7 @@ class Data():
                 # [(gap_y_min, gap_y_max)...]
                 gap_y_range = [[-0.21, 0.07], [0.19, 0.311], [-0.21, 0.063]]
 
+                # remove data inside gaps
                 for i in range(len(gap_x_range)):
                     gap_mask = (
                         (self.train['input'][:, 0] >= gap_x_range[i][0]) *
@@ -246,6 +261,7 @@ class Data():
                     self.train['values'] = self.train['values'][~gap_mask]
 
             if not np.allclose(self.noise_ratio, 0.):
+                # add noise to training data
                 self.train['values'] = \
                     self.add_noise_to_values(self.train['values'])
 
@@ -254,7 +270,6 @@ class Data():
             idx = torch.randperm(self.train['input'].size(0))[:num]
             self.train['input'] = self.train['input'][idx]
             self.train['values'] = self.train['values'][idx]
-
             print('nb. of training data points : '
                   f'{self.train["input"].size(0)}')
 
@@ -263,7 +278,7 @@ class Data():
                 self.valid['values'] = \
                     self.cpwl.evaluate(self.valid['input'])
 
-    def generate_uniform_data(self, num_samples):
+    def generate_random_samples(self, num_samples):
         """
         Generate uniformly distributed data inside convex set.
 
@@ -272,6 +287,9 @@ class Data():
 
         Args:
             num_samples (int) (before possible rejection)
+
+        Returns:
+            x (torch.tensor)
         """
         x = torch.empty((num_samples, 2))
         x[:, 0].uniform_(self.cpwl.tri.points[:, 0].min(),
@@ -285,7 +303,19 @@ class Data():
         return x
 
     def add_noise_to_values(self, values):
-        """  """
+        """
+        Add gaussian noise to values.
+
+        if self.noise_std exists, it is used as the noise standard deviation,
+        otherwise noise_std is computed from self.noise_ratio and the data
+        height range.
+
+        Args:
+            values (torch.tensor):
+                values to add noise to.
+
+        Returns the noisy values.
+        """
         noise_std = self.noise_std
         if noise_std is None:
             noise_std = self.noise_ratio * (values.max() - values.min())
@@ -297,7 +327,15 @@ class Data():
         return values + noise
 
     def init_pyramid(self):
-        """ """
+        """
+        Initialize the pyramid dataset.
+
+        Returns:
+            points (np.array): size (M, 2).
+            values (np.array): size (M,)
+        """
+
+        # points in lattice coordinates
         h = 0.1
         points = torch.tensor([[2 * h, 0.], [0., 2 * h],
                                [2 * h, -2 * h], [0., -2 * h],
@@ -322,6 +360,7 @@ class Data():
             points = torch.cat((points, points_ext), dim=0)
             values = torch.cat((values, values_ext), dim=0)
 
+        # convert to standard coordinates
         points = (Lattice.hexagonal_matrix @ points.t()).t()
 
         if False:
@@ -339,10 +378,13 @@ class Data():
 
     def init_planes(self):
         """
-        Initialize planes vertice triangulation and values;
-        initialize triangle centers, plane coefficients, and
-        affine coefficients.
+        Initialize the planes dataset.
+
+        Returns:
+            points (torch.tensor): size (M, 2).
+            values (torch.tensor): size (M,)
         """
+        # fit planes function in the lattice
         pad = 0.08
         x_min, _, x_max, _ = self.get_data_boundaries(hw_ratio=0.01, pad=pad)
         _, y_min, _, y_max = self.get_data_boundaries(hw_ratio=100, pad=pad)
@@ -368,8 +410,7 @@ class Data():
                                   [4, 2, 1],
                                   [3, 2, 5]])
 
-        # check values of vertices so that there is a seamless
-        # plane junction
+        # check values of vertices so that there is a seamless plane junction
         x_v6 = self.get_zero_loc(vert, simplices, 2, 3)
         x_v7 = self.get_zero_loc(vert, simplices, 4, 5)
         br = Lattice.bottom_right_std
@@ -392,13 +433,28 @@ class Data():
         a = torch.tensor([0.1, 0.05])
         b = torch.tensor([-0.05])
         vert[:, 2] += (vert[:, 0:2] * a.unsqueeze(0)).sum(1) + b
-        vert = vert.numpy()
 
-        return vert[:, 0:2], vert[:, 2]
+        points, values = vert[:, 0:2].numpy(), vert[:, 2].numpy()
+
+        return points, values
 
     @staticmethod
-    def get_zero_loc(vert, simplices, idx1, idx2, zval=0):
-        """ """
+    def get_zero_loc(vert, simplices, idx1, idx2):
+        """
+        Get zero locations of vertices for a seamless junction of the planes.
+
+        Args:
+            vert (np.array):
+                size: (M, 3) (points in the first two columns,
+                              values in the third)
+            simplices (np.array):
+                indexes of vertices for each simplex (row). size: (P, 3).
+            idx1, idx2 (int>=0):
+                indices of simplices to join.
+
+        Returns:
+            x (torch.tensor): size (2,)
+        """
         # size (2, 3, 3)
         idx_vec = [idx1, idx2]
         simplices_vert = \
@@ -409,7 +465,7 @@ class Data():
         affine_coeff = Lattice.get_affine_coeff_from_plane_coeff(plane_coeff)
         assert affine_coeff.size() == (2, 3)
 
-        B = -affine_coeff[:, -1:] + zval
+        B = -affine_coeff[:, -1:]
         A = affine_coeff[:, 0:2]
         x, _ = torch.solve(B, A)
 
@@ -417,9 +473,19 @@ class Data():
 
     def read_face(self, cut_eps=0.6):
         """
+        Read the 3D face dataset and construct a function from it by
+        cutting and eliminating duplicates.
+
         Args:
-            cut_eps:
+            cut_eps (float in [0,1]):
                 what height to cut face relative to its maximum height.
+
+        Returns:
+            cleaned_vert (np.array):
+                with vertices below cut_eps and duplicates removed and
+                zero mean.
+                size: (M, 3) (points in the first two columns,
+                              values in the third)
         """
         obj_file = os.path.join(self.data_dir, 'obj_free_male_head.obj')
 
@@ -458,7 +524,18 @@ class Data():
         return cleaned_vert
 
     def init_face(self, cut=False):
-        """ """
+        """
+        Initialize the face dataset.
+
+        Args:
+            cut (bool):
+                if True, use only a smaller section of the face.
+                Otherwise, use full face with zero boundaries.
+
+        Returns:
+            points (torch.tensor): size (M, 2).
+            values (torch.tensor): size (M,)
+        """
         vert = self.read_face()
 
         # normalize face to fit in [-0.8, 0.8]^2 square
@@ -466,6 +543,7 @@ class Data():
         vert = vert / max_ * 0.8
 
         if cut is True:
+            # cut a smaller portion of the face
             cpwl_aux = Delaunay(points=vert[:, 0:2].copy(),
                                 values=vert[:, 2].copy())
 
@@ -476,6 +554,7 @@ class Data():
                 (vert[:, 1] > y_min) * (vert[:, 1] < y_max)
             vert = vert[mask]
 
+            # add extreme points of the convex hull to vertices
             hull_points = np.array([[x_min, y_min], [x_max, y_min],
                                     [x_max, y_max], [x_min, y_max]])
 
@@ -488,6 +567,7 @@ class Data():
             hull = scipy.spatial.ConvexHull(points)
             hull_points = points[hull.vertices]
 
+        # add points along the convex hull
         for i in range(hull_points.shape[0]):
             frac = np.linspace(0.01, 0.99, num=99)[:, np.newaxis]
             next_vert = i + 1 if i != hull_points.shape[0] - 1 else 0
@@ -527,11 +607,23 @@ class Data():
             vert = np.concatenate((vert, new_vertices), axis=0)
 
         vert = self.fit_in_lattice(vert)
+        points, values = vert[:, 0:2], vert[:, 2]
 
-        return vert[:, 0:2], vert[:, 2]
+        return points, values
 
     def fit_in_lattice(self, vert):
-        """ """
+        """
+        Fit points in lattice.
+
+        Args:
+            vert (np.array):
+                size: (M, 3) (points in the first two columns,
+                              values in the third)
+
+        Returns:
+            vert (np.array):
+                scaled vertices that fit in lattice.
+        """
         # normalize face to fit in lattice
         hw_ratio = (vert[:, 1].max() - vert[:, 1].min()) / \
                    (vert[:, 0].max() - vert[:, 0].min())
@@ -558,18 +650,24 @@ class Data():
         return vert
 
     def get_data_boundaries(self, hw_ratio=math.sqrt(3), pad=0.1):
-        """ Get the data boundaries in standard coordinates for data
-        (pad distance from boundary)
-        in centered rectangular region with a specified height/width ratio,
-        so as to maximize occupied space within the pad-interior lattice.
+        """
+        Get the data boundaries that allow fitting the data in centered
+        rectangular region of the lattice with a specified height/width ratio,
+        so as to maximize occupied space within the interior lattice.
+        Pad a given distance from the limits if pad > 0.
 
         Takes into account geometry of hexagonal lattice:
         if hw_ratio > math.sqrt(3), the data touches the upper and bottom
         interior border; otherwise, it touch the left and right borders.
-        Args::
-            hw_ratio: height/width of rectangular region.
+
+        Args:
+            hw_ratio (float>0):
+                height/width ratio of rectangular region.
+            pad (float>=0):
+                distance to pad from the limits of the region.
+
         Returns:
-            tuple (x_min, x_max, y_min, y_max)
+            4-tuple (x_min, x_max, y_min, y_max): data boundaries
         """
         # requires that lattice is hexagonal and lsize*h = 1 (enforced)
         bottom_right_std = Lattice.bottom_right_std
