@@ -20,8 +20,10 @@ class BoxSpline():
     center_points = np.array([0., 0.])
     border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
                               -Hex.v1, -Hex.v2, -Hex.v2 + Hex.v1])
-    points = np.vstack((center_points, border_points))
-    values = np.array([math.sqrt(3) / 2, 0., 0., 0., 0., 0., 0.])
+    points = np.vstack((center_points, border_points, 2 * border_points))
+    values = np.array([math.sqrt(3) / 2,
+                       0., 0., 0., 0., 0., 0.,
+                       0., 0., 0., 0., 0., 0.])
     htv = 12
 
 
@@ -32,8 +34,10 @@ class SimplicialSpline():
     border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
                               -Hex.v1, -Hex.v2, -Hex.v2 + Hex.v1]) + \
         np.random.uniform(-0.2, 0.2, (6, 2))
-    points = np.vstack((center_points, border_points))
-    values = np.array([math.sqrt(3) / 2, 0., 0., 0., 0., 0., 0.])
+    points = np.vstack((center_points, border_points, 2 * border_points))
+    values = np.array([math.sqrt(3) / 2,
+                       0., 0., 0., 0., 0., 0.,
+                       0., 0., 0., 0., 0., 0.])
 
 
 class CutPyramid():
