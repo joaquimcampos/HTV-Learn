@@ -193,13 +193,23 @@ class Data():
                 self.delaunay['points'], self.delaunay['values'] = \
                     self.init_pyramid()
 
+                # training is made of all pyramid vertices except apex
+                self.train['input'] = self.delaunay['points'][:-1].clone()
+                self.train['values'] = self.delaunay['values'][:-1].clone()
+                # force validation set to be equal to test set
+                self.test_as_valid = True
+
             elif self.dataset_name.endswith('planes'):
                 self.delaunay['points'], self.delaunay['values'] = \
                     self.init_planes()
+                # overwrite noise standard deviation
+                self.noise_std = (self.noise_ratio *
+                                  self.delaunay['values'].max())
 
             elif 'face' in self.dataset_name:
                 self.delaunay['points'], self.delaunay['values'] = \
-                    self.init_face(cut=True
+                    self.init_face(self.data_dir,
+                                   cut=True
                                    if 'cut' in self.dataset_name
                                    else False)
 
@@ -326,7 +336,8 @@ class Data():
 
         return values + noise
 
-    def init_pyramid(self):
+    @staticmethod
+    def init_pyramid():
         """
         Initialize the pyramid dataset.
 
@@ -368,15 +379,10 @@ class Data():
             a, b = torch.tensor([.2, .2]) + torch.tensor([.1])
             values = values + (points * a.unsqueeze(0)).sum(1) + b
 
-        # training is made of all pyramid vertices except apex
-        self.train['input'] = points[:-1].clone()
-        self.train['values'] = values[:-1].clone()
-        # force validation set to be equal to test set
-        self.test_as_valid = True
-
         return points.numpy(), values.numpy()
 
-    def init_planes(self):
+    @classmethod
+    def init_planes(cls):
         """
         Initialize the planes dataset.
 
@@ -386,8 +392,8 @@ class Data():
         """
         # fit planes function in the lattice
         pad = 0.08
-        x_min, _, x_max, _ = self.get_data_boundaries(hw_ratio=0.01, pad=pad)
-        _, y_min, _, y_max = self.get_data_boundaries(hw_ratio=100, pad=pad)
+        x_min, _, x_max, _ = cls.get_data_boundaries(hw_ratio=0.01, pad=pad)
+        _, y_min, _, y_max = cls.get_data_boundaries(hw_ratio=100, pad=pad)
 
         dx = (x_max - x_min) / 100  # delta x step
         dy = (y_max - y_min) / 100  # delta y step
@@ -411,8 +417,8 @@ class Data():
                                   [3, 2, 5]])
 
         # check values of vertices so that there is a seamless plane junction
-        x_v6 = self.get_zero_loc(vert, simplices, 2, 3)
-        x_v7 = self.get_zero_loc(vert, simplices, 4, 5)
+        x_v6 = cls.get_zero_loc(vert, simplices, 2, 3)
+        x_v7 = cls.get_zero_loc(vert, simplices, 4, 5)
         br = Lattice.bottom_right_std
         ur = Lattice.upper_right_std
 
@@ -425,9 +431,6 @@ class Data():
                                  [-ur[0], -ur[1], 0.]])  # 11
 
         vert = torch.cat((vert, new_vert), dim=0)
-
-        # overwrite noise standard deviation
-        self.noise_std = self.noise_ratio * vert[:, 2].max()
 
         # add linear term to first vertices
         a = torch.tensor([0.1, 0.05])
@@ -471,7 +474,8 @@ class Data():
 
         return x.squeeze(-1)
 
-    def read_face(self, cut_eps=0.6):
+    @staticmethod
+    def read_face(data_dir, cut_eps=0.6):
         """
         Read the 3D face dataset and construct a function from it by
         cutting and eliminating duplicates.
@@ -487,7 +491,7 @@ class Data():
                 size: (M, 3) (points in the first two columns,
                               values in the third)
         """
-        obj_file = os.path.join(self.data_dir, 'obj_free_male_head.obj')
+        obj_file = os.path.join(data_dir, 'obj_free_male_head.obj')
 
         V = []
         with open(obj_file, "r") as file1:
@@ -523,7 +527,8 @@ class Data():
 
         return cleaned_vert
 
-    def init_face(self, cut=False):
+    @classmethod
+    def init_face(cls, data_dir, cut=False):
         """
         Initialize the face dataset.
 
@@ -536,7 +541,7 @@ class Data():
             points (torch.tensor): size (M, 2).
             values (torch.tensor): size (M,)
         """
-        vert = self.read_face()
+        vert = cls.read_face(data_dir)
 
         # normalize face to fit in [-0.8, 0.8]^2 square
         max_ = max(np.abs(vert[:, 0]).max(), np.abs(vert[:, 1]).max())
@@ -606,12 +611,13 @@ class Data():
                 (fine_grid, np.zeros((fine_grid.shape[0], 1))), axis=1)
             vert = np.concatenate((vert, new_vertices), axis=0)
 
-        vert = self.fit_in_lattice(vert)
+        vert = cls.fit_in_lattice(vert)
         points, values = vert[:, 0:2], vert[:, 2]
 
         return points, values
 
-    def fit_in_lattice(self, vert):
+    @classmethod
+    def fit_in_lattice(cls, vert):
         """
         Fit points in lattice.
 
@@ -627,8 +633,8 @@ class Data():
         # normalize face to fit in lattice
         hw_ratio = (vert[:, 1].max() - vert[:, 1].min()) / \
                    (vert[:, 0].max() - vert[:, 0].min())
-        _, _, x_max, y_max = self.get_data_boundaries(hw_ratio=hw_ratio,
-                                                      pad=0.03)
+        _, _, x_max, y_max = cls.get_data_boundaries(hw_ratio=hw_ratio,
+                                                     pad=0.03)
 
         # recenter data
         x_mean = (vert[:, 0].max() + vert[:, 0].min()) / 2
@@ -649,7 +655,8 @@ class Data():
 
         return vert
 
-    def get_data_boundaries(self, hw_ratio=math.sqrt(3), pad=0.1):
+    @staticmethod
+    def get_data_boundaries(hw_ratio=math.sqrt(3), pad=0.1):
         """
         Get the data boundaries that allow fitting the data in centered
         rectangular region of the lattice with a specified height/width ratio,
