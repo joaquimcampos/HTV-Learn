@@ -10,7 +10,8 @@ from htvlearn.data import (
     SimplicialSpline,
     CutPyramid,
     SimpleJunction,
-    DistortedGrid
+    DistortedGrid,
+    Data
 )
 
 
@@ -70,6 +71,11 @@ class TestDelaunay:
         plot = Plot(log_dir='/tmp')
         plot.plot_delaunay(cpwl)
 
+    def test_is_admissible(self):
+        points, values = Data.init_planes()
+        cpwl = Delaunay(points=points, values=values)
+        assert cpwl.is_admissible is True
+
     @pytest.mark.parametrize("dataset", dataset_dict["toy"], indirect=True)
     def test_exact_htv(self, dataset):
         """ """
@@ -103,7 +109,7 @@ class TestDelaunay:
             cpwl = Delaunay(**dataset, add_extreme_points=True)
 
         h = (cpwl.tri.points[:, 0].max() - cpwl.tri.points[:, 0].min()) / 5000
-        lefkimiattis_htv = cpwl.get_lefkimiattis_HTV(h=h)
+        lefkimiattis_htv = cpwl.get_lefkimiattis_schatten_HTV(h=h)
         exact_htv = cpwl.get_exact_HTV()
         print('(Discrete, Exact) : ({:.4f}, {:.4f})'
               .format(lefkimiattis_htv, exact_htv))

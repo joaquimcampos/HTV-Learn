@@ -59,7 +59,7 @@ def htv_discretizations(args):
         res['exact_grad_trace_htv'][i] = cpwl.get_exact_grad_trace_HTV(h=h)
         res['exact_grad_schatten_htv'][i] = \
             cpwl.get_exact_grad_schatten_HTV(h=h)
-        res['lefkimiattis_htv'][i] = cpwl.get_lefkimiattis_HTV(h=h)
+        res['lefkimiattis_htv'][i] = cpwl.get_lefkimiattis_schatten_HTV(h=h)
         res['lefkimiattis_trace_htv'][i] = cpwl.get_lefkimiattis_trace_HTV(h=h)
 
     # Create plots with pre-defined labels.

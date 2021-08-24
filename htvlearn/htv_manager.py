@@ -71,7 +71,7 @@ class HTVManager(HTVProject):
         """ """
         # TODO: has_linear_boundary (find affine coefficients from two points,
         # then check if all hull points fall within that plane.
-        if self.data.cpwl.has_constant_boundary is True:
+        if self.data.cpwl.is_admissible is True:
             # compute HTV in whole lattice
             z = self.lat.flattened_C.numpy()
             # regularization
