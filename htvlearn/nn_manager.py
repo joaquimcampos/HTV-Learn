@@ -1,6 +1,8 @@
+import warnings
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.backends.cudnn as cudnn
 import numpy as np
 from functools import partial
 import torch.autograd.functional as AF
@@ -20,42 +22,57 @@ from htvlearn.hessian import (
 
 class NNManager(NNProject):
     """ """
-    def __init__(self, params, write=True):
+    def __init__(self, params, log=True):
         """
-        write: weather to write on log directory
+        Args:
+            params (dict):
+                parameter dictionary.
+            log (bool):
+                if True, log results.
         """
-        super().__init__(params, write=write)
+        super().__init__(params, log=log)
 
-        loading_success = self.restore_ckpt_params()
+        is_ckpt_loaded = False
+        if self.load_ckpt is True:
+            # is_ckpt_loaded=True if a checkpoint was successfully loaded.
+            is_ckpt_loaded = self.restore_ckpt_params()
 
         self.net = self.build_model(self.params, self.device)
         self.net.double()
         self.net.dtype = next(self.net.parameters()).dtype
 
-        self.set_optimization()
+        self.optimizer, self.scheduler = self.set_optimization()
 
-        if loading_success is True:
-            self.restore_model_data()
+        if is_ckpt_loaded is True:
+            self.restore_model_data(self.net)
 
         # During testing, average the loss only at the end to get accurate
-        # value of the loss per sample. If we used reduction='mean', when
-        # nb_test_samples % batch_size != 0, we could only average the loss
-        # per batch (as done in training for printing the losses), but not
-        # per sample.
+        # value of the loss per sample. If using reduction='mean', when
+        # nb_test_samples % batch_size != 0 we can only average the loss per
+        # batch (as in training for printing the losses) but not per sample.
         self.criterion = nn.MSELoss(reduction='mean')
         self.test_criterion = nn.MSELoss(reduction='sum')
 
         self.criterion.to(self.device)
         self.test_criterion.to(self.device)
 
-        print(self.net)
-        return
+        # # uncomment for printing network architecture
+        # print(self.net)
 
     @classmethod
     def build_model(cls, params, device, *args, **kwargs):
-        """ Returns network instance """
-        if params['verbose']:
-            print(f'\nUsing network model: {params["net_model"]}.')
+        """
+        Build the network model.
+
+        Args:
+            params (dict):
+                contains the network name and the model parameters.
+            device (str):
+                'cpu' or 'cuda:0'.
+        Returns:
+            net (nn.Module)
+        """
+        print('\n==> Building model..')
 
         if params['net_model'] == 'relufcnet2d':
             NetworkModule = ReLUfcNet2D
@@ -64,19 +81,28 @@ class NNManager(NNProject):
         else:
             raise ValueError(f'Model {params["net_model"]} not available.')
 
-        return super(NNManager, cls).build_model(NetworkModule, params, device,
-                                                 *args, **kwargs)
+        net = NetworkModule(**params['model'], device=device)
+
+        net = net.to(device)
+        if device == 'cuda':
+            cudnn.benchmark = True
+
+        print(f'[Network] Total number of parameters : {net.num_params}.')
+
+        return net
 
     def set_optimization(self):
-        """ """
-        self.optimizer = optim.Adam(self.net.parameters(),
-                                    lr=0.001,
-                                    weight_decay=self.params['weight_decay'])
+        """Initialize optimizer and scheduler."""
+        optimizer = optim.Adam(self.net.parameters(),
+                               lr=0.001,
+                               weight_decay=self.params['weight_decay'])
 
-        print('\nOptimizer :', self.optimizer, sep='\n')
+        print('\nOptimizer :', optimizer, sep='\n')
 
-        self.scheduler = optim.lr_scheduler.MultiStepLR(
-            self.optimizer, self.params['milestones'])
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer,
+                                                   self.params['milestones'])
+
+        return optimizer, scheduler
 
     @property
     def model_state(self):
@@ -90,49 +116,57 @@ class NNManager(NNProject):
 
     @property
     def htv_log(self):
+        """ """
         return self.htv_dict
 
     @property
     def train_loss_log(self):
+        """ """
         return self.train_loss_dict
 
     @property
     def valid_loss_log(self):
+        """ """
         return self.valid_loss_dict
 
     #########################################################################
     # TRAIN
 
     def train(self):
-        """ Training loop """
-        self.net.train()
+        """Training loop."""
+        self.net.train()  # set the network in training mode
+
+        if self.params['verbose']:
+            self.print_train_info()
 
         if self.params['log_step'] is None:  # default
             # log at every epoch
-            self.params['log_step'] = self.num_batches['train']
+            self.params['log_step'] = self.num_train_batches
 
         if self.params['valid_log_step'] is None:  # default
             # validation done halfway and at the end of training
-            self.params['valid_log_step'] = \
-                int(self.num_batches['train'] *
-                    self.params['num_epochs'] * 1. / 2.)
+            self.params['valid_log_step'] = int(
+                self.num_train_batches * self.params['num_epochs'] * 1. / 2.)
 
         elif self.params['valid_log_step'] < 0:
             # validation at every epoch
-            self.params['valid_log_step'] = self.num_batches['train']
+            self.params['valid_log_step'] = self.num_train_batches
 
-        print('\n\nStarting training...')
         self.global_step = 0
         ###
+        # initialize log dictionaries
         self.htv_dict = {}
         self.train_loss_dict = {}
         self.valid_loss_dict = {}
         ###
 
-        # signaling that training was not performed
+        # get initial model performance
+        # -1 signals that training was not performed
         self.latest_train_loss = -1
         self.validation_step(-1)
         self.net.train()
+
+        print('\n==> Starting training...')
 
         for epoch in range(0, self.params['num_epochs']):
 
@@ -147,7 +181,12 @@ class NNManager(NNProject):
         self.test()
 
     def train_epoch(self, epoch):
-        """ """
+        """
+        Training for one epoch.
+
+        Args:
+            epoch (int).
+        """
         print(f'\nEpoch: {epoch}\n')
 
         running_loss = 0.
@@ -167,6 +206,7 @@ class NNManager(NNProject):
 
             if batch_idx % self.params['log_step'] == (
                     self.params['log_step'] - 1):
+                # training log step
                 mse = (running_loss / self.params['log_step'])
                 self.latest_train_loss = mse
                 losses_dict = {'avg. mse': mse}
@@ -175,6 +215,7 @@ class NNManager(NNProject):
 
             if self.global_step % self.params['valid_log_step'] == (
                     self.params['valid_log_step'] - 1):
+                # validation log step
                 self.validation_step(epoch)
                 self.net.train()
 
@@ -188,13 +229,18 @@ class NNManager(NNProject):
                       f'learning rate - {lr}')
 
     def validation_step(self, epoch):
-        """ """
+        """
+        Does one validation step. Saves results on checkpoint.
+
+        Args:
+            epoch (int).
+        """
         train_loss, _ = self.evaluate_results(mode='train')
         valid_loss, _ = self.evaluate_results(mode='valid')
 
         #####
         if not self.params['no_htv']:
-            print('\nComputing Hessian...')
+            print('\n==> Computing Hessian...')
             self.htv_dict[str(epoch + 1)] = self.compute_network_htv()
             print('HTV dict :', self.htv_dict[str(epoch + 1)])
             print('Exact HTV :', self.data.cpwl.get_exact_HTV())
@@ -211,8 +257,61 @@ class NNManager(NNProject):
         self.valid_log_step(losses_dict)
         self.ckpt_log_step(epoch)  # save checkpoint
 
+    def compute_network_htv(self):
+        """
+        Compute the network's HTV using the 'finite_diff_differential' or
+        'exact_differential' mode.
+
+        Returns:
+            htv (float).
+        """
+        cpwl = True if 'relu' in self.params['net_model'] else False
+        htv = {}
+
+        if self.params['htv_mode'] == 'finite_diff_differential':
+            # use finite second differences to compute the hessian
+            grid = self.data.cpwl.get_grid(h=0.0002)
+            with torch.no_grad():
+                Hess = get_finite_second_diff_Hessian(
+                    grid, self.evaluate_func)
+
+            htv = self.get_htv_from_Hess(Hess, grid.h, cpwl=cpwl)
+
+        elif self.params['htv_mode'] == 'exact_differential':
+            warnings.warn('"exact_differential" mode is computationally '
+                          'expensive and does not lead to to precise '
+                          'computations, in general. Prefer setting '
+                          '"htv_mode" to "finite_diff_differential".')
+            grid = self.data.cpwl.get_grid(h=0.01)
+            if self.params['net_model'] == 'relufcnet2d':
+                # cpwl function -> exact gradient + finite first differences
+                #  to compute hessian
+                Hess = get_exact_grad_Hessian(
+                    grid, partial(self.differentiate_func, 'jacobian'))
+            else:
+                # cpwl function -> exact hessian + sum over the grid locations
+                # to compute hessian
+                Hess = get_exact_Hessian(
+                    grid, partial(self.differentiate_func, 'hessian'))
+
+            htv = self.get_htv_from_Hess(Hess, grid.h, cpwl=cpwl)
+
+        return htv
+
     def evaluate_func(self, x, batch_size=2000000):
-        """ """
+        """
+        Evaluate model function for some input.
+
+        Args:
+            x (np.ndarray):
+                inputs. size: (n, 2).
+            batch_size (int):
+                batch size for evaluation.
+
+        Returns:
+            y (np.ndarray):
+                result of evaluating model at x.
+        """
         x = torch.from_numpy(x).to(self.device)
         assert x.dtype == torch.float64
         dataloader = x.split(batch_size)
@@ -227,7 +326,19 @@ class NNManager(NNProject):
         return y.detach().cpu().numpy()
 
     def differentiate_func(self, mode, x):
-        """ """
+        """
+        Evaluate model Jacobian/Hessian at some input.
+
+        Args:
+            mode (str):
+                "jacobian" or "hessian"
+            x (np.ndarray):
+                inputs. size: (n, 2).
+
+        Returns:
+            x_diff (np.ndarray):
+                result of evaluating model ``mode`` at x.
+        """
         assert mode in ['jacobian', 'hessian']
         inputs = tuple(torch.from_numpy(x).to(self.device))
         autograd_func = AF.jacobian if mode == 'jacobian' else AF.hessian
@@ -240,9 +351,16 @@ class NNManager(NNProject):
     @staticmethod
     def get_htv_from_Hess(Hess, h, cpwl=False):
         """
+        Get the HTV from the hessian at grid locations.
+
         Args:
-            h: grid size
-            cpwl: True if network is CPWL.
+            h (float):
+                grid size.
+            cpwl (bool):
+                True if network is CPWL.
+
+        Returns:
+            htv (float).
         """
         if cpwl is False:
             # schatten-p-norm -> sum
@@ -261,34 +379,11 @@ class NNManager(NNProject):
 
         return htv
 
-    def compute_network_htv(self):
-        """ """
-        cpwl = True if 'relu' in self.params['net_model'] else False
-        htv = {}
-
-        if self.params['htv_mode'] == 'exact_differential':
-            grid = self.data.cpwl.get_grid(h=0.01)
-            if self.params['net_model'] == 'relufcnet2d':
-                Hess = get_exact_grad_Hessian(
-                    grid, partial(self.differentiate_func, 'jacobian'))
-            else:
-                Hess = get_exact_Hessian(
-                    grid, partial(self.differentiate_func, 'hessian'))
-
-            htv = self.get_htv_from_Hess(Hess, grid.h, cpwl=cpwl)
-
-        elif self.params['htv_mode'] == 'finite_diff_differential':
-            grid = self.data.cpwl.get_grid(h=0.0002)
-            with torch.no_grad():
-                Hess = get_finite_second_diff_Hessian(
-                    grid, self.evaluate_func)
-
-            htv = self.get_htv_from_Hess(Hess, grid.h, cpwl=cpwl)
-
-        return htv
-
     def test(self):
-        """ """
+        """Test model."""
+        if self.params['verbose']:
+            self.print_test_info()
+
         test_loss, _ = self.evaluate_results(mode='test')
 
         print(f'\ntest mse : {test_loss}')
@@ -300,7 +395,19 @@ class NNManager(NNProject):
         print('\nFinished testing.')
 
     def evaluate_results(self, mode):
-        """ """
+        """
+        Evaluate train, validation or test results.
+
+        Args:
+            mode (str):
+                'train', 'valid' or 'test'
+
+        Returns:
+            mse (float):
+                ``mode`` mean-squared-error.
+            output (torch.Tensor):
+                result of evaluating model on ``mode`` set.
+        """
         assert mode in ['train', 'valid', 'test']
 
         if mode == 'train':
@@ -316,35 +423,44 @@ class NNManager(NNProject):
         self.net.eval()
         running_loss = 0.
         total = 0
-        predictions = torch.tensor([]).to(device=self.device)
+        output = torch.tensor([]).to(device=self.device)
         values = torch.tensor([]).to(device=self.device)
 
         with torch.no_grad():
 
-            for batch_idx, (inputs, labels) in enumerate(dataloader):
+            # notation: _b = 'batch'
+            for batch_idx, (inputs_b, labels_b) in enumerate(dataloader):
+                inputs_b = inputs_b.to(device=self.device,
+                                       dtype=self.net.dtype)
+                labels_b = labels_b.to(device=self.device,
+                                       dtype=self.net.dtype)
+                outputs_b = self.net(inputs_b)
+                output = torch.cat((output, outputs_b), dim=0)
+                values = torch.cat((values, labels_b), dim=0)
 
-                inputs = inputs.to(device=self.device, dtype=self.net.dtype)
-                labels = labels.to(device=self.device, dtype=self.net.dtype)
-                outputs = self.net(inputs)
-                predictions = torch.cat((predictions, outputs), dim=0)
-                values = torch.cat((values, labels), dim=0)
-
-                loss = self.test_criterion(outputs, labels)
+                loss = self.test_criterion(outputs_b, labels_b)
                 running_loss += loss.item()
-                total += labels.size(0)
+                total += labels_b.size(0)
 
-        data_dict['predictions'] = predictions
+        data_dict['predictions'] = output
 
         loss = running_loss / total
         # sanity check
-        mse, _ = compute_mse_snr(values.cpu(), predictions.cpu())
+        mse, _ = compute_mse_snr(values.cpu(), output.cpu())
         assert np.allclose(mse, loss), \
             '(mse: {:.7f}, loss: {:.7f})'.format(mse, loss)
 
-        return loss, predictions
+        return mse, output
 
     def forward_data(self, inputs, batch_size=64):
-        """ """
+        """
+        Compute model output for some input.
+
+        Args:
+            input (torch.Tensor):
+                size: (n, 2).
+            batch_size (int)
+        """
         self.net.eval()
         predictions = torch.tensor([])
 
@@ -361,13 +477,18 @@ class NNManager(NNProject):
     @staticmethod
     def read_htv_log(htv_log):
         """
-        Read htv_log dictionary
+        Parse htv_log dictionary.
+
+        Args:
+            htv_log (dict).
 
         Returns:
-            epochs: array with saved epochs. size: (E,).
-            htv: dict/array with saved htv accross training:
-                if non-cpwl: dict('p': array of size = #epochs),
-                if cpwl: array of size = #epochs.
+            epochs (np.ndarray):
+                array with saved epochs. size: (E,).
+            htv: (dict/np.ndarray):
+                saved htv accross training:
+                if non-cpwl: dict('p': array of size: (E,)),
+                if cpwl: array of size: (E,).
         """
         assert isinstance(htv_log, dict)
         # keys of htv_log are epochs
@@ -412,11 +533,13 @@ class NNManager(NNProject):
     @staticmethod
     def read_loss_log(loss_log):
         """
-        Read loss_log (train or valid) dictionary
+        Read loss_log (train or valid) dictionary.
 
         Returns:
-            epochs: array with saved epochs. size: (E,).
-            loss: array with saved loss across training. size: (E,)
+            epochs (np.ndarray):
+                array with saved epochs. size: (E,).
+            loss (np.ndarray):
+                array with saved loss across training. size: (E,)
         """
         assert isinstance(loss_log, dict)
         # keys of loss_log are epochs

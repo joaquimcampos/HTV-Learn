@@ -2,7 +2,6 @@ import os
 import glob
 import math
 from abc import abstractproperty
-from torch.backends import cudnn
 
 from htvlearn.htv_utils import size_str
 from htvlearn.master_project import MasterProject
@@ -10,113 +9,145 @@ from htvlearn.nn_dataloader import NNDataLoader
 
 
 class NNProject(MasterProject):
-    def __init__(self, params, write=True):
+    def __init__(self, params, log=True):
         """
-        write: weather to write on log directory
+        Args:
+            params (dict):
+                parameter dictionary.
+            log (bool):
+                if True, log results.
         """
-        super().__init__(params, write=write)
+        super().__init__(params, log=log)
 
         self.init_dataloader()
 
     def init_dataloader(self):
-        """ """
+        """Initialize train, valid and test dataloaders."""
         print('\n==> Preparing data..')
         self.dataloader = NNDataLoader(self.data, **self.params['dataloader'])
         self.trainloader, self.validloader = \
             self.dataloader.get_train_valid_loader()
         self.testloader = self.dataloader.get_test_loader()
 
-        # saves num_samples, num_batches for train, valid, test
-        self.save_train_test_info()
+        self.save_train_info()
 
-    def save_train_test_info(self):
+    def save_train_info(self):
         """ """
-        if self.params['verbose']:
-            sample_data, sample_target = self.trainloader[0]
-            print('batch (data, target) size : '
-                  f'({size_str(sample_data)}, {size_str(sample_target)})')
+        assert (self.trainloader is not None)
+        self.num_train_samples = sum(
+            inputs.size(0) for inputs, _ in self.trainloader)
+        self.num_train_batches = \
+            math.ceil(self.num_train_samples / self.dataloader.batch_size)
 
-        self.num_samples, self.num_batches = {}, {}
-        for mode, loader in zip(
-                ['train', 'valid', 'test'],
-                [self.trainloader, self.validloader, self.testloader]):
-
-            self.num_samples[mode] = \
-                sum(inputs.size(0) for inputs, _ in loader)
-            self.num_batches[mode] = \
-                math.ceil(self.num_samples[mode] / self.dataloader.batch_size)
-
-            if self.params['verbose']:
-                print(f'no.  of {mode} samples : {self.num_samples[mode]}')
-                print('\nNumber of {mode} batches per epoch : '
-                      f'{self.num_batches[mode]}')
-
-    @staticmethod
-    def build_model(NetworkModule, params, device='cuda:0'):
+    def print_train_info(self):
         """ """
-        print('\n==> Building model..')
+        assert (self.validloader is not None)
+        assert hasattr(self, 'num_train_samples')
+        assert hasattr(self, 'num_train_batches')
 
-        net = NetworkModule(**params['model'], device=device)
+        num_valid_samples = sum(
+            inputs.size(0) for inputs, _ in self.validloader)
+        sample_data, sample_target = self.trainloader[0]
 
-        net = net.to(device)
-        if device == 'cuda':
-            cudnn.benchmark = True
+        num_valid_batches = \
+            math.ceil(num_valid_samples / self.dataloader.batch_size)
 
-        print('\n[Network] Total number of parameters : {}'.format(
-            net.num_params))
+        print('\n==> Train info:')
+        print('batch (data, target) size : '
+              f'({size_str(sample_data)}, {size_str(sample_target)}).')
+        print('no. of (train, valid) samples : '
+              f'({self.num_train_samples}, {num_valid_samples}).')
+        print('no. of (train, valid) batches : '
+              f'({self.num_train_batches}, {num_valid_batches}).')
 
-        return net
+    def print_test_info(self):
+        """ """
+        assert (self.testloader is not None)
+
+        num_test_samples = sum(
+            inputs.size(0) for inputs, _ in self.testloader)
+        sample_data, sample_target = self.testloader[0]
+
+        num_test_batches = math.ceil(num_test_samples /
+                                     self.dataloader.batch_size)
+
+        print('\n==> Test info:')
+        print('batch (data, target) size : '
+              f'({size_str(sample_data)}, {size_str(sample_target)}).')
+        print(f'no. of test samples : {num_test_samples}.')
+        print(f'no. of test batches : {num_test_batches}.')
 
     @abstractproperty
     def model_state(self):
-        """ Should return model state """
+        """Returns model state."""
         pass
 
     @abstractproperty
     def optimizer_state(self):
-        """ Should return optimizer state """
+        """Returns optimizer state."""
         pass
 
     @abstractproperty
     def train_loss_log(self):
-        """ Should return train loss log accross epochs """
+        """Returns train loss log accross epochs."""
         pass
 
     @abstractproperty
     def valid_loss_log(self):
-        """ Should return valid loss log accross epochs """
+        """Returns valid loss log accross epochs."""
         pass
 
     def train_log_step(self, epoch, batch_idx, losses_dict):
         """
+        Log the training.
+
         Args:
-            losses_dict - a dictionary {loss name : loss value}
+            epoch (int):
+                current epoch.
+            batch_idx (int):
+                current batch.
+            losses_dict (dict):
+                A dictionary of the form {loss name (str) : loss value (float)}
         """
         assert isinstance(losses_dict, dict)
 
         print('[{:3d}, {:6d} / {:6d}] '
-              .format(epoch + 1, batch_idx + 1,
-                      self.num_batches['train']),
+              .format(epoch + 1, batch_idx + 1, self.num_train_batches),
               end='')
         for key, value in losses_dict.items():
             print('{}: {:.3E} | '.format(key, value), end='')
 
     def valid_log_step(self, losses_dict):
         """
+        Log the validation.
+
         Args:
-            losses_dict - a dictionary {loss name : loss value}
+            epoch (int):
+                current epoch.
+            losses_dict (dict):
+                A dictionary of the form {loss name (str) : loss value (float)}
         """
         assert isinstance(losses_dict, dict)
 
         print('\nvalidation_step : ', end='')
         for key, value in losses_dict.items():
-            print('{}: {:7.3f} | '.format(key, value), end='')
+            print('{}: {:.3E} | '.format(key, value), end='')
 
         for key, val in losses_dict.items():
             self.update_json(key, val)
 
     def ckpt_log_step(self, epoch):
-        """ """
+        """
+        Save the model in a checkpoint.
+
+        Only allow at most params['ckpt_nmax_files'] checkpoints.
+        Delete the oldest checkpoint, if necessary.
+        Also log the best results so far in a separate checkpoint.
+
+        Args:
+            epoch (int):
+                current epoch.
+        """
         base_ckpt_filename = os.path.join(
             self.log_dir_model,
             self.params['model_name'] + '_net_{:04d}'.format(epoch + 1))
@@ -141,7 +172,9 @@ class NNProject(MasterProject):
         return
 
     def save_to_ckpt(self, ckpt_filename):
-        """ Save model, optimizer, and other relevant data to checkpoint.
+        """
+        Save model, train/valid loss and other relevant data
+        to checkpoint.
         """
         save_dict = {
             'model_state': self.model_state,
@@ -151,10 +184,16 @@ class NNProject(MasterProject):
 
         super().save_to_ckpt(ckpt_filename, save_dict)
 
-    def restore_model_data(self):
-        """ """
-        super().restore_model_data()
-        self.net.load_state_dict(self.loaded_ckpt['model_state'], strict=False)
+    def restore_model_data(self, net):
+        """
+        Restore model and data, and initialize dataloader.
+
+        Args:
+            net (nn.Module):
+                model to restore state of.
+        """
+        self.restore_data()
+        net.load_state_dict(self.loaded_ckpt['model_state'], strict=False)
         self.init_dataloader()
 
         return
