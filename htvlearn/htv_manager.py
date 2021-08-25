@@ -12,21 +12,22 @@ from htvlearn.htv_utils import compute_mse_snr
 
 class HTVManager(HTVProject):
     """ """
-    def __init__(self, params, write=True):
+    def __init__(self, params, log=True):
         """
         Args:
             params (dict):
                 parameter dictionary.
-            write (bool):
-                weather to log result to json files.
+            log (bool):
+                if True, log results.
         """
-
         # initializes log, lattice, data, json files
-        super().__init__(params, write=write)
+        super().__init__(params, log=log)
 
-        loading_success = self.restore_ckpt_params()
-        if loading_success is True:
-            self.restore_model_data()
+        if self.load_ckpt is True:
+            # is_ckpt_loaded=True if a checkpoint was successfully loaded.
+            is_ckpt_loaded = self.restore_ckpt_params()
+            if is_ckpt_loaded is True:
+                self.restore_model_data()
 
         self.algorithm = Algorithm(self.lat, self.data,
                                    **self.params['algorithm'])
@@ -164,7 +165,15 @@ class HTVManager(HTVProject):
 
     @staticmethod
     def read_htv_log(htv_log):
-        """ """
+        """
+        Parse htv_log.
+
+        Args:
+            htv_log (float)
+        Returns:
+            htv (np.ndarray):
+                np.array([htv]).
+        """
         assert isinstance(htv_log, float) or isinstance(htv_log, np.float32), \
             f'{type(htv_log)}.'
         return np.array([htv_log])

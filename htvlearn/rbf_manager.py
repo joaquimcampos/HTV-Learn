@@ -14,25 +14,32 @@ from htvlearn.htv_utils import compute_mse_snr
 
 class RBFManager(RBFProject):
     """ """
-    def __init__(self, params, write=True):
+    def __init__(self, params, log=True):
         """
-        write: weather to write on log directory
+        Args:
+            params (dict):
+                parameter dictionary.
+            log (bool):
+                if True, log results.
         """
         # initializes log, lattice, data, json files
-        super().__init__(params, write=write)
+        super().__init__(params, log=log)
 
-        loading_success = self.restore_ckpt_params()
-        if loading_success is True:
-            self.restore_model_data()
+        if self.load_ckpt is True:
+            # is_ckpt_loaded=True if a checkpoint was successfully loaded.
+            is_ckpt_loaded = self.restore_ckpt_params()
+            if is_ckpt_loaded is True:
+                self.restore_model_data()
 
         self.rbf = RBF(self.data, **self.params['rbf'])
 
     @property
     def htv_log(self):
+        """ """
         return self.htv_dict
 
     def train(self):
-        """ """
+        """Run algorithm and save results."""
         self.htv_dict = {}
 
         output = self.forward_data(self.data.train['input'])
@@ -57,40 +64,17 @@ class RBFManager(RBFProject):
             self.update_json('_'.join([mode, 'mse']), mse)
             print(f'{mode} mse  : {mse}')
 
-        # save params and data to checkpoint
+        # save params, data and htv to checkpoint
         self.save_to_ckpt()
 
-    def evaluate_func(self, x, batch_size=100000):
-        """ """
-        x = torch.from_numpy(x)
-        assert x.dtype == torch.float64
-        dataloader = x.split(batch_size)
-        if self.params['verbose']:
-            print('Length dataloader: ', len(dataloader))
-        y = torch.tensor([], device=x.device, dtype=x.dtype)
-
-        # every 5% progress
-        print_step = max(int(len(dataloader) * 1. / 20), 1)
-        print('Starting evaluation...')
-
-        start_time = time.time()
-
-        for batch_idx, input in enumerate(dataloader):
-            out = self.forward_data(input)
-            y = torch.cat((y, out), dim=0)
-            if batch_idx % print_step == 0:
-                progress = int((batch_idx + 1) * 100. / len(dataloader))
-                print(f'=> {progress}% complete')
-
-        end_time = time.time()
-        run_time = str(datetime.timedelta(seconds=int(end_time - start_time)))
-
-        print(f'Finished. Run time: {run_time} (h:min:sec).')
-
-        return y.numpy()
-
     def compute_htv(self):
-        """ """
+        """
+        Compute the HTV of the model in the data range.
+
+        Return:
+            htv (dict):
+                dictionary of the form {'p': htv_p}
+        """
         grid = self.data.cpwl.get_grid(h=0.0005)
         Hess = get_finite_second_diff_Hessian(grid, self.evaluate_func)
 
@@ -106,7 +90,19 @@ class RBFManager(RBFProject):
         return htv
 
     def evaluate_results(self, mode):
-        """ """
+        """
+        Evaluate train, validation or test results.
+
+        Args:
+            mode (str):
+                'train', 'valid' or 'test'
+
+        Returns:
+            mse (float):
+                ``mode`` mean-squared-error.
+            output (torch.Tensor):
+                result of evaluating model on ``mode`` set.
+        """
         assert mode in ['train', 'valid', 'test']
 
         if mode == 'train':
@@ -124,17 +120,67 @@ class RBFManager(RBFProject):
 
         return mse, output
 
+    def evaluate_func(self, x, batch_size=100000):
+        """
+        Evaluate model function for some input.
+
+        Args:
+            x (np.ndarray):
+                inputs. size: (n, 2).
+            batch_size (int):
+                batch size for evaluation.
+
+        Returns:
+            y (np.ndarray):
+                result of evaluating model at x.
+        """
+        x = torch.from_numpy(x)
+        assert x.dtype == torch.float64
+        dataloader = x.split(batch_size)
+        y = torch.tensor([], device=x.device, dtype=x.dtype)
+
+        # every 5% progress
+        print_step = max(int(len(dataloader) * 1. / 20), 1)
+        print('\n==> Starting evaluation...')
+        if self.params['verbose']:
+            print('=> Length dataloader: ', len(dataloader))
+
+        start_time = time.time()
+
+        for batch_idx, input in enumerate(dataloader):
+            out = self.forward_data(input)
+            y = torch.cat((y, out), dim=0)
+            if batch_idx % print_step == 0:
+                progress = int((batch_idx + 1) * 100. / len(dataloader))
+                print(f'=> {progress}% complete')
+
+        end_time = time.time()
+        run_time = str(datetime.timedelta(seconds=int(end_time - start_time)))
+
+        print(f'==> Finished. Run time: {run_time} (h:min:sec).')
+
+        return y.numpy()
+
     def forward_data(self, input, *args, **kwargs):
-        """ """
+        """
+        Compute model output for some input.
+
+        Args:
+            input (torch.Tensor):
+                size: (n, 2).
+        """
         return self.rbf.evaluate(input)
 
     @staticmethod
     def read_htv_log(htv_log):
         """
-        Read htv_log dictionary
+        Parse htv_log dictionary.
 
+        Args:
+            htv_log (dict).
         Returns:
-            htv: dict('p': htv),
+            htv (dict):
+                dictionary of the form {'p': np.array([htv_p])}.
         """
         # e.g. htv_log = {'1': htv_1, '2': htv_2}
         assert isinstance(htv_log, dict)
