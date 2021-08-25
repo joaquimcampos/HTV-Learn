@@ -150,7 +150,7 @@ class MasterProject(ABC):
 
     @abstractmethod
     def save_to_ckpt(self, ckpt_filename, save_dict=None):
-        """ Save params and data to checkpoint.
+        """ Save params, data and htv to checkpoint.
         """
         save_base_dict = {
             'params': self.params,

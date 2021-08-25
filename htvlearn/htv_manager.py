@@ -13,7 +13,13 @@ from htvlearn.htv_utils import compute_mse_snr
 class HTVManager(HTVProject):
     """ """
     def __init__(self, params, write=True):
-        """ """
+        """
+        Args:
+            params (dict):
+                parameter dictionary.
+            write (bool):
+                weather to log result to json files.
+        """
 
         # initializes log, lattice, data, json files
         super().__init__(params, write=write)
@@ -27,13 +33,15 @@ class HTVManager(HTVProject):
 
     @property
     def htv_log(self):
+        """ """
         return self.htv
 
     def train(self):
-        """ """
+        """Run algorithm and save results."""
         # updates lattice; creates lattice_dict and results_dict.
         results_dict, lattice_dict = self.algorithm.multires_admm()
 
+        # run validation/testing
         for mode in ['valid', 'test']:
             mse, _ = self.evaluate_results(mode)
             self.update_json('_'.join([mode, 'mse']), mse)
@@ -49,28 +57,19 @@ class HTVManager(HTVProject):
         for info, value in results_dict.items():
             self.update_json(info, value)
 
-        # save params, lattice history and data to checkpoint
+        # save params, data, htv and lattice history to checkpoint
         self.save_to_ckpt(lattice_dict)
 
-    def evaluate_func(self, x, batch_size=2000000):
-        """ """
-        x = torch.from_numpy(x).to(self.device)
-        assert x.dtype == torch.float64
-        dataloader = x.split(batch_size)
-        if self.params['verbose']:
-            print('Length dataloader: ', len(dataloader))
-        y = torch.tensor([], device=x.device, dtype=x.dtype)
-
-        for batch_idx, input in enumerate(dataloader):
-            out = self.forward_data(self.lat, input)
-            y = torch.cat((y, out), dim=0)
-
-        return y.detach().cpu().numpy()
-
     def compute_htv(self):
-        """ """
-        # TODO: has_linear_boundary (find affine coefficients from two points,
-        # then check if all hull points fall within that plane.
+        """
+        Compute the HTV of the model.
+
+        If ground-truth cpwl function is admissible, compute the HTV over
+        the whole lattice. Otherwise, compute it only in the data range.
+
+        Return:
+            htv (float).
+        """
         if self.data.cpwl.is_admissible is True:
             # compute HTV in whole lattice
             z = self.lat.flattened_C.numpy()
@@ -90,7 +89,19 @@ class HTVManager(HTVProject):
         return htv
 
     def evaluate_results(self, mode):
-        """ """
+        """
+        Evaluate train, validation or test results.
+
+        Args:
+            mode (str):
+                'train', 'valid' or 'test'
+
+        Returns:
+            mse (float):
+                ``mode`` mean-squared-error.
+            output (torch.Tensor):
+                result of evaluating model on ``mode`` set.
+        """
         assert mode in ['train', 'valid', 'test']
 
         if mode == 'train':
@@ -108,10 +119,45 @@ class HTVManager(HTVProject):
 
         return mse, output
 
+    def evaluate_func(self, x, batch_size=2000000):
+        """
+        Evaluate model function for some input.
+
+        Args:
+            x (np.ndarray):
+                inputs. size: (n, 2).
+            batch_size (int):
+                batch size for evaluation.
+
+        Returns:
+            y (np.ndarray):
+                result of evaluating model at x.
+        """
+        x = torch.from_numpy(x).to(self.device)
+        assert x.dtype == torch.float64
+        dataloader = x.split(batch_size)
+        if self.params['verbose']:
+            print('Length dataloader: ', len(dataloader))
+        y = torch.tensor([], device=x.device, dtype=x.dtype)
+
+        for batch_idx, input in enumerate(dataloader):
+            out = self.forward_data(self.lat, input)
+            y = torch.cat((y, out), dim=0)
+
+        return y.detach().cpu().numpy()
+
     @staticmethod
-    def forward_data(lattice_obj, input_std, **kwargs):
-        """ """
-        input_lat = lattice_obj.standard_to_lattice(input_std)
+    def forward_data(lattice_obj, input, **kwargs):
+        """
+        Compute model output for some input.
+
+        Args:
+            lattice_obj (Lattice):
+                instance of Lattice() (see lattice.py).
+            input (torch.Tensor):
+                size: (n, 2).
+        """
+        input_lat = lattice_obj.standard_to_lattice(input)
         output = lattice_obj.get_values_from_affine_coefficients(input_lat)
 
         return output
