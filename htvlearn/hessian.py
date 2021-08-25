@@ -2,7 +2,17 @@ import numpy as np
 
 
 def create_hessian(df_dx1_dx1, df_dx1_dx2, df_dx2_dx1, df_dx2_dx2):
-    """ """
+    """
+    Create hessian from the second partial derivatives.
+
+    Args:
+        df_dxi_dxj:
+            partial derivatives wrt xi, xj. size (k,)
+
+    Returns:
+        Hessian:
+            size: (k, 2, 2)
+    """
     assert df_dx1_dx1.shape == df_dx1_dx2.shape
     assert df_dx2_dx1.shape == df_dx1_dx2.shape
     assert df_dx2_dx2.shape == df_dx2_dx1.shape
@@ -16,9 +26,18 @@ def create_hessian(df_dx1_dx1, df_dx1_dx2, df_dx2_dx1, df_dx2_dx2):
 
 def get_finite_second_diff_Hessian(grid, evaluate):
     """
+    Get hessian from finite second differences of the function values
+    on a grid.
+
     Args:
-        grid: grid object
-        evaluate: evaluation functional
+        grid:
+            Grid instance (see grid.py).
+        evaluate:
+            evaluation functional that hessian is computed for.
+
+    Returns:
+        Hess:
+            size: (k, 2, 2)
     """
     assert grid.x.dtype == np.float64
     z = evaluate(grid.x)
@@ -27,22 +46,12 @@ def get_finite_second_diff_Hessian(grid, evaluate):
     # indexes (i,j) = (y,x)
     df_dx1 = np.diff(z_2D, axis=1)[:-1, :] / grid.h
     df_dx2 = np.diff(z_2D, axis=0)[:, :-1] / grid.h
-    # df_dx2, df_dx1 = np.gradient(z_2D, grid.h)
-
-    # df_dx1 = np.clip(df_dx1, -1, 1)
-    # df_dx2 = np.clip(df_dx2, -1, 1)
-
-    print('Lefki grad')
-    print(df_dx1.min(), df_dx1.max())
-    print(df_dx2.min(), df_dx2.max())
 
     # second-order derivatives up to h^2
     df_dx1_dx1 = np.diff(df_dx1, axis=1)[:-1, :] / grid.h
     df_dx1_dx2 = np.diff(df_dx2, axis=1)[:-1, :] / grid.h
     df_dx2_dx1 = np.diff(df_dx1, axis=0)[:, :-1] / grid.h
     df_dx2_dx2 = np.diff(df_dx2, axis=0)[:, :-1] / grid.h
-    # df_dx2_dx1, df_dx1_dx1 = np.gradient(df_dx1, grid.h)
-    # df_dx2_dx2, df_dx1_dx2 = np.gradient(df_dx2, grid.h)
 
     # Hessian up to h^2
     Hess = create_hessian(df_dx1_dx1, df_dx1_dx2, df_dx2_dx1, df_dx2_dx2)
@@ -56,9 +65,18 @@ def get_finite_second_diff_Hessian(grid, evaluate):
 
 def get_exact_grad_Hessian(grid, grad_eval):
     """
+    Get hessian from finite first differences of the exact gradient
+    on a grid.
+
     Args:
-        grid: grid object
-        grad_eval: gradient evaluation function
+        grid:
+            Grid instance (see grid.py).
+        grad_eval:
+            function to evaluate gradient.
+
+    Returns:
+        Hess:
+            size: (k, 2, 2)
     """
     assert grid.x.dtype == np.float64
     input = grid.x
@@ -68,18 +86,12 @@ def get_exact_grad_Hessian(grid, grad_eval):
     df_dx1 = x_grad_2D[:, :, 0]
     df_dx2 = x_grad_2D[:, :, 1]
 
-    print('Exact grad')
-    print(df_dx1.min(), df_dx1.max())
-    print(df_dx2.min(), df_dx2.max())
-
     # indexes (i,j) = (y,x)
     # second-order derivatives up to h^2
     df_dx1_dx1 = np.diff(df_dx1, axis=1)[:-1, :] / grid.h
     df_dx1_dx2 = np.diff(df_dx2, axis=1)[:-1, :] / grid.h
     df_dx2_dx1 = np.diff(df_dx1, axis=0)[:, :-1] / grid.h
     df_dx2_dx2 = np.diff(df_dx2, axis=0)[:, :-1] / grid.h
-    # df_dx2_dx1, df_dx1_dx1 = np.gradient(df_dx1, grid.h)
-    # df_dx2_dx2, df_dx1_dx2 = np.gradient(df_dx2, grid.h)
 
     # Hessian up to h^2
     Hess = create_hessian(df_dx1_dx1, df_dx1_dx2, df_dx2_dx1, df_dx2_dx2)
@@ -92,9 +104,20 @@ def get_exact_grad_Hessian(grid, grad_eval):
 
 
 def get_exact_Hessian(grid, hessian_eval):
-    """ """
-    # # convert to float32 for possible feed to network
-    # input = grid.x.astype('float32')
+    """
+    Get hessian from 'exact' partial second derivatives computation
+    on a grid.
+
+    Args:
+        grid:
+            Grid instance (see grid.py).
+        hessian_eval:
+            function to evaluate hessian.
+
+    Returns:
+        Hess:
+            size: (k, 2, 2)
+    """
     input = grid.x
     x_hessian = hessian_eval(input)
     # Hessian up to h^2
