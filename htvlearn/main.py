@@ -256,6 +256,11 @@ def verify_params(params):
             print('--simplex being overwritten to False.')
             params['simplex'] = False  # force simplex=False
 
+    if params['method'] != 'neural_net' and \
+            params['device'].startswith('cuda'):
+        print('--device being overwritten to "cpu"')
+        params['device'] = 'cpu'
+
     return params
 
 
