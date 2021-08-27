@@ -13,7 +13,15 @@ class Operators():
     hexagonal_correction = 2 * math.sqrt(3) / 3
 
     def __init__(self, lattice_obj, input, lmbda=None, **kwargs):
-        """ """
+        """
+        Args:
+            lattice_obj (Lattice):
+                instance of Lattice class (lattice.py)
+            input (torch.Tensor):
+                training datapoints.
+            lmbda (None or float):
+                If not None, multiply regularization matrix by this value.
+            """
         self.input = input
         self.lmbda = lmbda
         self.H_mat_sparse = self.get_forward_op(lattice_obj, self.input)
@@ -21,11 +29,23 @@ class Operators():
 
     @staticmethod
     def get_forward_op(lat, input):
-        """ Construct sparse H in (||Hz - y||_2)^2 + ||Lz||_1 ;
+        """
+        Construct sparse H in (||Hz - y||_2)^2 + ||Lz||_1 ;
         H is a sparse matrix of barycentric coordinates.
 
         This method does not depend on boundary conditions since all points
         are inside the interior lattice.
+
+        Args:
+            lattice_obj (Lattice):
+                instance of Lattice class (lattice.py)
+            input (torch.Tensor):
+                training datapoints.
+
+        Returns:
+            H_mat_sparse (scipy.sparse.csr_matrix):
+                Forward matrix with the 3 barycentric coordinates of each
+                datapoint in each row. size: (input.size(0), num_vertices).
         """
         x_lat = lat.standard_to_lattice(input)
         # get in-lattice points
@@ -73,11 +93,24 @@ class Operators():
 
     @classmethod
     def get_regularization_op(cls, lat, lmbda=None):
-        """ Construct sparse L (based on HTV regularization)
+        """
+        Construct sparse L (based on HTV regularization)
         in (||Hz - y||_2)^2 + lmbda*||Lz||_1.
 
         See calculations of HTV in the paper.
         If lmbda is None, does not multiply by it.
+
+        Args:
+            lattice_obj (Lattice):
+                instance of Lattice class (lattice.py)
+            lmbda (None or float):
+                If not None, multiply regularization matrix by this value.
+
+        Returns:
+            L_mat_sparse (scipy.sparse.csr_matrix):
+                regularization matrix. Contains 4 values in each row.
+                If lmbda not None, it is multiplied by this value.
+                size: (#junctions, num_vertices).
         """
         assert cls.reg_mat.size() == (3, lat.neighborhood_size)
 
