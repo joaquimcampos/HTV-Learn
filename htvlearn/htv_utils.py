@@ -1,3 +1,5 @@
+"""Module with project utilities"""
+
 import os
 import sys
 import argparse
@@ -15,8 +17,9 @@ class ArgCheck():
     """ Class for input argument verification """
     @staticmethod
     def p_int(value):
-        """ Check if int value got from argparse is positive
-            and raise error if not.
+        """
+        Check if int value got from argparse is positive
+        and raise error if not.
         """
         ivalue = int(value)
         if ivalue <= 0:
@@ -25,31 +28,10 @@ class ArgCheck():
         return ivalue
 
     @staticmethod
-    def p_odd_int(value):
-        """ Check if int value got from argparse is positive
-            and raise error if not.
-        """
-        ivalue = int(value)
-        if (ivalue <= 0) or ((ivalue + 1) % 2 != 0):
-            raise argparse.ArgumentTypeError(
-                f'{value} is an invalid positive odd int value')
-        return ivalue
-
-    @staticmethod
-    def nn_int(value):
-        """ Check if int value got from argparse is non-negative
-            and raise error if not.
-        """
-        ivalue = int(value)
-        if ivalue < 0:
-            raise argparse.ArgumentTypeError(
-                f'{value} is an invalid non-negative int value')
-        return ivalue
-
-    @staticmethod
     def p_float(value):
-        """ Check if float value got from argparse is positive
-            and raise error if not.
+        """
+        Check if float value got from argparse is positive
+        and raise error if not.
         """
         ivalue = float(value)
         if ivalue <= 0:
@@ -58,21 +40,10 @@ class ArgCheck():
         return ivalue
 
     @staticmethod
-    def frac_float(value):
-        """ Check if float value got from argparse is >= 0 and <= 1
-            and raise error if not.
-        """
-        ivalue = float(value)
-        if ivalue < 0 or ivalue > 1:
-            raise argparse.ArgumentTypeError(
-                f'{value} is an invalid fraction float value'
-                '(should be in [0, 1])')
-        return ivalue
-
-    @staticmethod
     def nn_float(value):
-        """ Check if float value got from argparse is non-negative
-            and raise error if not.
+        """
+        Check if float value got from argparse is non-negative
+        and raise error if not.
         """
         ivalue = float(value)
         if not np.allclose(np.clip(ivalue, -1.0, 0.0), 0.0):
@@ -81,19 +52,31 @@ class ArgCheck():
         return ivalue
 
 
-# Parameters
-
-
 def size_str(input):
-    """ Returns a string with the size of the input pytorch tensor
+    """
+    Returns a string with the size of the input tensor
+
+    Args:
+        input (torch.Tensor)
+    Returns:
+        out_str (str)
     """
     out_str = '[' + ', '.join(str(i) for i in input.size()) + ']'
     return out_str
 
 
 def dict_recursive_merge(params_root, merger_root, base=True):
-    """ Recursively merges merger_root into params_root giving precedence
-    to the second as in z = {**x, **y}
+    """
+    Recursively merges merger_root into params_root giving precedence
+    to the second dictionary as in z = {**x, **y}
+
+    Args:
+        params_root (dict)
+        merger_root (dict):
+            dictionary with parameters to be merged into params root;
+            overwrites values of params_root for the same keys and level.
+        base (bool):
+            True for the first level of the recursion
     """
     if base:
         assert isinstance(params_root, dict)
@@ -112,9 +95,16 @@ def dict_recursive_merge(params_root, merger_root, base=True):
     return merger_root
 
 
-def assign_structure_recursive(assign_root, structure, base=True):
-    """ Recursively assigns values to assign_root according to structure
+def assign_tree_structure(assign_root, structure, base=True):
+    """
+    Assign a tree structure to dictionary according to structure.
     (see structure variable in default_struct_values.py)
+
+    Args:
+        assign_root (dict):
+            dictionary to be assigned a tree structure
+        base (bool):
+            True for the first level of the recursion
     """
     if base:
         assert isinstance(assign_root, dict)
@@ -129,11 +119,11 @@ def assign_structure_recursive(assign_root, structure, base=True):
         for key, val in structure.items():
             if isinstance(val, dict):
                 assign_root[key] = {}
-                assign_root[key] = assign_structure_recursive(assign_root[key],
-                                                              structure[key],
-                                                              base=False)
-                # do not have empty dictionaries in assign_root
+                assign_root[key] = assign_tree_structure(assign_root[key],
+                                                         structure[key],
+                                                         base=False)
                 if len(assign_root[key]) < 1:
+                    # do not have empty dictionaries in assign_root
                     del assign_root[key]
             else:
                 assert val is None, 'leaf values in structure should be None'
@@ -142,8 +132,8 @@ def assign_structure_recursive(assign_root, structure, base=True):
                     if not base:
                         leaves.append(key)
 
-    # delete duplicated leaves in base root if they are not
-    # in first level of structure dict
+    # delete duplicated leaves in base root if they are not in first level of
+    # structure dict
     if base:
         for key in leaves:
             if key not in structure and key in assign_root:
@@ -153,7 +143,15 @@ def assign_structure_recursive(assign_root, structure, base=True):
 
 
 def flatten_structure(assign_root, base=True):
-    """ Flattens the structure created with assign_structure_recursive()
+    """
+    Reverses the operation of assign_tree_structure()
+    by flattening input dictionary.
+
+    Args:
+        assign_root (dict):
+            dictionary to be flattened
+        base (bool):
+            True for the first level of the recursion
     """
     if base:
         assert isinstance(assign_root, dict)
@@ -171,11 +169,16 @@ def flatten_structure(assign_root, base=True):
 
 
 def csr_to_spmatrix(M, extended_shape=None):
-    """ Convert csr matrix to spmatrix
+    """
+    Convert scipy.sparse.csr_matrix to scipy.sparse.spmatrix.
 
     Args:
-        M - csr matrix
-        extended_shape - extended shape for matrix.
+        M (scipy.sparse.csr_matrix)
+        extended_shape:
+            extended shape for matrix.
+
+    Returns:
+        M_sp (scipy.sparse.spmatrix)
     """
     # convert torows, cols = M.nonzero() spmatrix
     if extended_shape is not None:
@@ -191,7 +194,19 @@ def csr_to_spmatrix(M, extended_shape=None):
 
 
 def compute_snr(x_values, mse):
-    """ """
+    """
+    Compute snr from gtruth values and mse of prediction.
+
+    Args:
+        x_values (torch.Tensor):
+            gtruth values for a given input.
+        mse (float):
+            MSE(x_values, x_values_hat), where x_values_hat are the
+            predictions for the same input.
+
+    Returns:
+        snr (dB)
+    """
     gt_energy = (x_values ** 2).mean().item()
     snr = 10 * math.log10(gt_energy / mse)
 
@@ -199,7 +214,19 @@ def compute_snr(x_values, mse):
 
 
 def compute_mse_snr(x_values, x_values_hat):
-    """ """
+    """
+    Compute mse and snr from gtruth values and predictions.
+
+    Args:
+        x_values (torch.Tensor):
+            gtruth values at a given location.
+        x_values_hat (torch.Tensor):
+            predictions for the same input.
+
+    Returns:
+        mse (float)
+        snr (db)
+    """
     mse = ((x_values - x_values_hat)**2).mean().item()
     snr = compute_snr(x_values, mse)
 
@@ -207,7 +234,16 @@ def compute_mse_snr(x_values, x_values_hat):
 
 
 def json_load(json_filename):
-    """ """
+    """
+    Load a json file.
+
+    Args:
+        json_filename (str):
+            Path of the .json file with results.
+    Returns:
+        results_dict (dict):
+            dictionary with results stored in the json file.
+    """
     try:
         with open(json_filename) as jsonfile:
             results_dict = json.load(jsonfile)
@@ -219,7 +255,15 @@ def json_load(json_filename):
 
 
 def json_dump(results_dict, json_filename):
-    """ """
+    """
+    Save results in a json file.
+
+    Args:
+        results_dict (dict):
+            dictionary with the results to be stored in the json file.
+        json_filename (str):
+            Path of the .json file where results are stored.
+    """
     try:
         with open(json_filename, 'w') as jsonfile:
             json.dump(results_dict, jsonfile, sort_keys=False, indent=4)
@@ -229,7 +273,15 @@ def json_dump(results_dict, json_filename):
 
 
 def add_date_to_filename(filename):
-    """ """
+    """
+    Adds current date to a filename.
+
+    Args:
+        filename (str)
+    Returns:
+        new_filename (str):
+            filename with added date.
+    """
     now = datetime.now()
     # dd/mm/YY H:M:S
     dt_string = now.strftime("%d-%m-%Y_%H:%M")
@@ -292,13 +344,29 @@ def frange(start, stop, step, n=None):
 
 
 def get_sigma_from_eps(eps):
-    """ Get sigma (standard deviation) from eps for RBF
+    """
+    Get sigma (standard deviation) from eps for RBF.
+
+    Args:
+        eps (float):
+            width parameter of the kernel (larger->smaller).
+
+    Returns:
+        sigma (float):
+            standard deviation of the kernel
     """
     return np.sqrt(1. / (2. * eps))
 
 
 @contextmanager
 def silence_stdout():
+    """
+    contextmanager for silencing stdout.
+
+    Usage:
+        with silence_stdout():
+            code_block that cannot print to stdout.
+    """
     new_target = open(os.devnull, "w")
     old_target, sys.stdout = sys.stdout, new_target
     try:
