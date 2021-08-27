@@ -9,7 +9,8 @@ from matplotlib.ticker import MaxNLocator
 from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
-from htvlearn.htv_utils import add_date_to_filename, get_sigma_from_eps
+from htvlearn.rbf import RBF
+from htvlearn.htv_utils import add_date_to_filename
 
 
 lw = 1  # linewidth
@@ -82,7 +83,7 @@ def plot_htv_vs_parameter(args):
                 eps = params["rbf"]["eps"]
                 label_str = r"$\epsilon$ = ${:.1f}$ ".format(eps) + \
                             "$\sigma$ = ${:.1E}$."\
-                            .format(get_sigma_from_eps(eps))
+                            .format(RBF.get_sigma_from_eps(eps))
                 ax.set_xlabel(r"$\lambda$", fontsize=20)
             elif not np.allclose(params["rbf"]["eps"], eps):
                 raise ValueError(f'{params["rbf"]["eps"]} != {eps}')
@@ -97,7 +98,7 @@ def plot_htv_vs_parameter(args):
             elif not np.allclose(params["rbf"]["lmbda"], lmbda):
                 raise ValueError(f'{params["rbf"]["lmbda"]} != {lmbda}')
 
-            parameter_array[i] = get_sigma_from_eps(
+            parameter_array[i] = RBF.get_sigma_from_eps(
                 params["rbf"]["eps"])  # sigma
 
         print('Parameters: ', params, sep='\n')

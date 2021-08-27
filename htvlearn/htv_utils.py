@@ -343,21 +343,6 @@ def frange(start, stop, step, n=None):
                 yield round(start + i * step, n)
 
 
-def get_sigma_from_eps(eps):
-    """
-    Get sigma (standard deviation) from eps for RBF.
-
-    Args:
-        eps (float):
-            width parameter of the kernel (larger->smaller).
-
-    Returns:
-        sigma (float):
-            standard deviation of the kernel
-    """
-    return np.sqrt(1. / (2. * eps))
-
-
 @contextmanager
 def silence_stdout():
     """

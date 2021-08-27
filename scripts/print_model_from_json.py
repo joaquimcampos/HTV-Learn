@@ -7,11 +7,11 @@ import json
 from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
+from htvlearn.rbf import RBF
 from htvlearn.htv_manager import HTVManager
 from htvlearn.htv_utils import (
     compute_snr,
     json_load,
-    get_sigma_from_eps,
     silence_stdout
 )
 
@@ -85,7 +85,7 @@ def print_model_from_json(args):
     print('Exact HTV : {:.2f}'.format(ckpt['exact_htv']))
     if params['method'] == 'rbf':
         print('sigma: {:.2E}'.format(
-            get_sigma_from_eps(params["rbf"]["eps"])))
+            RBF.get_sigma_from_eps(params["rbf"]["eps"])))
 
 
 if __name__ == "__main__":

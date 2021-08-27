@@ -1,15 +1,19 @@
 import torch
+import numpy as np
 
 
 class RBF():
     def __init__(self, data_obj, eps, lmbda, **params):
         """
         Args:
-            data_obj: containing
-                data_obj['train']['input']: size: (M,2); data point locations
-                data_obj['train']['values']: size: (M,); data point values
-            eps: shape parameter (the higher, the more localized)
-            lmbda: regularization weight
+            data_obj (Data):
+                instance of Data class (data.py), containing:
+                data_obj['train']['input']: size: (M,2);
+                data_obj['train']['values']: size: (M,).
+            eps (float):
+                rbf kernel shape parameter (the higher, the more localized)
+            lmbda (float):
+                regularization weight
         """
         self.params = params
         self.data = data_obj
@@ -24,8 +28,28 @@ class RBF():
         self.init_gram_mat()
         self.init_coeffs()
 
+    @staticmethod
+    def get_sigma_from_eps(eps):
+        """
+        Get sigma (standard deviation) from rbf shape parameter eps.
+
+        Args:
+            eps (float):
+                rbf kernel shape parameter (the higher, the more localized).
+
+        Returns:
+            sigma (float):
+                standard deviation of the kernel.
+        """
+        return np.sqrt(1. / (2. * eps))
+
     def init_gram_mat(self):
-        """ Init G Gram matrix
+        """
+        Init Gram interpolation matrix with gaussian kernels.
+
+        ``gram_mat = exp(-(eps * distance_pairs)**2)``, where
+        ``distance pairs`` is the gram matrix of parwise distances of training
+        datapoints.
         """
         # (1, M, 2) - (M, 1, 2) = (M, M, 2)
         # location pairwise differences
@@ -45,7 +69,9 @@ class RBF():
         assert self.gram_mat.size() == (self.input.size(0), self.input.size(0))
 
     def init_coeffs(self):
-        """ Solve (G + lambda*I)a = y
+        """
+        Solve ``(gram_mat + lambda*I)a = y`` for ``a`` (coefficients),
+        and save the result in self.coeffs.
         """
         A = self.gram_mat + self.lmbda * \
             torch.ones_like(self.gram_mat[:, 0]).diag()
@@ -60,8 +86,16 @@ class RBF():
 
     def construct_H_mat(self, x, **kwargs):
         """
+        Construct the forward matrix H from x (the locations where we wish
+        to evaluate the RBF), such that f(x) = H_mat @ self.coeffs.
+
         Args:
-            x: locations where to evaluate radial basis function
+            x (torch.Tensor):
+                locations where we wish to evaluate the RBF.
+
+        Returns:
+            H_mat (torch.Tensor):
+                size: (x.size(0), self.coeffs.size(0))
         """
         # (N, 1, 2) - (1, M, 2) = (N, M, 2)
         # location pairwise differences \varphi(\norm{\V x - \V x_i})
@@ -80,9 +114,19 @@ class RBF():
         return H_mat
 
     def evaluate(self, x, **kwargs):
-        """ f(\V x) = \sum_{i=1}^N
+        """
+        Evaluate RBF output at locations x.
+
+        f(\V x) = self.H_mat @ self.coeffs, where self.H_mat is constructed
+        from x.
+
         Args:
-            x: locations where to evaluate the radial basis function
+            x (torch.Tensor):
+                locations where we wish to evaluate the RBF.
+
+        Returns:
+            output (torch.Tensor):
+                evaluation of the RBF at x.
         """
         try:
             H_mat = self.construct_H_mat(x)
