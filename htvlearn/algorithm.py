@@ -114,7 +114,7 @@ class Algorithm():
         z = z_odl.asarray()
         z_torch = torch.from_numpy(z)
         new_C_mat = self.lat.flattened_C_to_C_mat(z_torch)
-        self.lat.update_lattice_values(new_C_mat)
+        self.lat.update_coefficients(new_C_mat)
 
         self.z_admm = z
         self.y_lmbda_admm, self.htv_loss_admm = \
@@ -217,7 +217,7 @@ class Algorithm():
         z_torch = torch.from_numpy(z)
         new_C_mat = self.lat.flattened_C_to_C_mat(z_torch)
 
-        self.lat.update_lattice_values(new_C_mat)
+        self.lat.update_coefficients(new_C_mat)
 
         y_lmbda_simplex, htv_loss_simplex = \
             self.update_results_dict(z, 'simplex')
@@ -388,7 +388,7 @@ class Algorithm():
             if i < num_iter - 1:  # don't divide in last iteration
                 lattice_dict = self.lat.save(f'admm_iteration_{i+1}',
                                              lattice_dict)
-                self.lat.divide_lattice()
+                self.lat.refine_lattice()
 
             elif self.simplex is True:
                 # save final admm lattice before running simplex
