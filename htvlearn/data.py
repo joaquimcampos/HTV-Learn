@@ -412,7 +412,7 @@ class Data():
                           [x_min + 25 * dx, y_max - 5 * dy, 0.]])  # 5
 
         # auxiliary triangulation of the function
-        # size (num_triangles, vertices)
+        # size (num_simplices, vertices)
         simplices = torch.tensor([[0, 1, 3],
                                   [1, 2, 3],
                                   [4, 1, 0],

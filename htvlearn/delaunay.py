@@ -479,7 +479,7 @@ class Delaunay():
         grad = self.tri.simplices_affine_coeff[:, 0:2].copy()
         assert grad.shape == (self.tri.simplices.shape[0], 2)
 
-        # size (nsimplex, 3) there are three neighbors of each triangle in 2D.
+        # size (nsimplex, 3) there are three neighbors of each simplex in 2D.
         neighbors = self.tri.neighbors.copy()  # -1 signals no neighbors
         # tuple (rows, cols)
         no_neighbor_idx = np.where(neighbors == -1)
