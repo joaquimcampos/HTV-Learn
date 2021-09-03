@@ -8,7 +8,7 @@ from functools import partial
 import torch.autograd.functional as AF
 
 from htvlearn.htv_utils import compute_mse_snr
-from htvlearn.models import GELUfcNet2D, ReLUfcNet2D
+from htvlearn.networks import GELUfcNet2D, ReLUfcNet2D
 from htvlearn.nn_project import NNProject
 from htvlearn.hessian import (
     get_exact_grad_Hessian,
