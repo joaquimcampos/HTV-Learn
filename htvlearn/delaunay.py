@@ -143,25 +143,35 @@ class Delaunay():
     @property
     def has_rectangular_range(self):
         """Check if convex hull of cpwl is rectangular."""
-        convex_set_points = self.tri.points[self.convex_hull_points_idx]
+        hull_points = self.tri.points[self.convex_hull_points_idx]
 
-        x_min = convex_set_points[:, 0].min()
-        x_max = convex_set_points[:, 0].max()
-        y_min = convex_set_points[:, 1].min()
-        y_max = convex_set_points[:, 1].max()
+        x_min = hull_points[:, 0].min()
+        x_max = hull_points[:, 0].max()
+        y_min = hull_points[:, 1].min()
+        y_max = hull_points[:, 1].max()
 
-        ones_vec = np.ones((convex_set_points.shape[0], ))
+        # test rectangle
+        rect = np.array([[x_min, y_min],
+                         [x_max, y_min],
+                         [x_min, y_max],
+                         [x_max, y_max]])
 
-        eps = 1e-6
-        if np.sum((convex_set_points[:, 0] - ones_vec * x_min) < -eps) > 0:
-            return False
-        if np.sum((convex_set_points[:, 0] - ones_vec * x_max) > eps) > 0:
-            return False
-        if np.sum((convex_set_points[:, 1] - ones_vec * y_min) < -eps) > 0:
-            return False
-        if np.sum((convex_set_points[:, 1] - ones_vec * y_max) > eps) > 0:
-            return False
+        # check that hull_points contains the 4 corners of the rectangle
+        for corner in rect:
+            # difference to a corner.
+            diff = hull_points - np.array([corner])
+            if not np.any(np.all(np.isclose(diff, 0), axis=1)):
+                # there isn't any hull point corresponding to this corner
+                return False
 
+        # check that all points have
+        # x = x_min, or x = x_max, or y = y_min, or y = ymax
+        if not np.all(np.isclose(hull_points[:, 0], x_min) +
+                      np.isclose(hull_points[:, 0], x_max) +
+                      np.isclose(hull_points[:, 1], y_min) +
+                      np.isclose(hull_points[:, 1], y_max)):
+            return False
+        
         return True
 
     @staticmethod
