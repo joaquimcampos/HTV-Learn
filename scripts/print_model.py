@@ -34,18 +34,18 @@ def print_model(args):
         htv = None
 
         if params['method'] == 'neural_net':
-            manager = NNManager(params, write=False)
+            manager = NNManager(params, log=False)
             if ckpt['htv_log']:
                 _, htv_model = NNManager.read_htv_log(ckpt['htv_log'])
                 htv = htv_model[-1]
 
         elif params['method'] == 'rbf':
-            manager = RBFManager(params, write=False)
+            manager = RBFManager(params, log=False)
             if ckpt['htv_log']:
                 htv = RBFManager.read_htv_log(ckpt['htv_log'])
 
         elif params['method'] == 'htv':
-            manager = HTVManager(params, write=False)
+            manager = HTVManager(params, log=False)
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]
 

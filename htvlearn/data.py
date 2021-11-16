@@ -240,7 +240,7 @@ class Data():
                              to_numpy=False,
                              to_float32=True).x
 
-                    # reject samples outside convex set
+                    # discard samples outside convex set
                     idx = self.cpwl.tri.find_simplex(self.test['input'])
                     self.test['input'] = self.test['input'][idx >= 0]
                 else:

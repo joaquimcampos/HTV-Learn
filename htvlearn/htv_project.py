@@ -21,7 +21,7 @@ class HTVProject(MasterProject):
     @property
     def info_list(self):
         """Return list of info to log."""
-        return super().info_list + ['percentage_nonzero']
+        return super().info_list + ['percentage_nonzero', 'simplex_status']
 
     def save_to_ckpt(self, lattice_dict):
         """Save lattice history and other relevant data to checkpoint."""
