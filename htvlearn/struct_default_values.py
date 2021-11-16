@@ -46,8 +46,11 @@ default_values = {
     'num_workers': 4,  # number of subprocesses to use for data loading.
     # verbose
     'verbose': False,
-    'resume': False
+    'resume': False,
 }
+
+# epsilon to assess sparsity
+SPARSITY_EPS = 1e-4
 
 # This tree defines the strcuture of self.params in the Project() class.
 # if it is desired to keep an entry in the first level that is also a

@@ -10,12 +10,11 @@ from htvlearn.operators import Operators
 from htvlearn.data import Data
 from htvlearn.lattice import Lattice
 from htvlearn.htv_utils import csr_to_spmatrix
+from htvlearn.struct_default_values import SPARSITY_EPS
 
 
 class Algorithm():
     """Class for the HTV minimization algorithm"""
-
-    eps = 1e-4  # epsilon to assess sparsity
 
     def __init__(self,
                  lattice_obj,
@@ -348,7 +347,7 @@ class Algorithm():
         total_loss = df_loss + self.lmbda * htv_loss
 
         # sparsity
-        L_z_zero_idx = np.where(np.absolute(L_z) <= self.eps)[0]
+        L_z_zero_idx = np.where(np.absolute(L_z) <= SPARSITY_EPS)[0]
         percentage_nonzero = 0.
         if L_z.shape[0] != 0:
             fraction_zero = L_z_zero_idx.shape[0] / L_z.shape[0]

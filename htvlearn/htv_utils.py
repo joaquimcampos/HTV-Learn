@@ -14,7 +14,7 @@ import json
 import cvxopt
 
 from htvlearn.operators import Operators
-from htvlearn.algorithm import Algorithm
+from htvlearn.struct_default_values import SPARSITY_EPS
 
 
 class ArgCheck():
@@ -385,7 +385,7 @@ def get_sparsity(lat):
 
     # compute ||Lz||_0
     L_z = L_mat_sparse.dot(z.numpy())
-    L_z_zero_idx = np.where(np.absolute(L_z) <= Algorithm.eps)[0]
+    L_z_zero_idx = np.where(np.absolute(L_z) <= SPARSITY_EPS)[0]
 
     fraction_zero = 1.
     if L_z.shape[0] != 0:
