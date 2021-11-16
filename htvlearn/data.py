@@ -228,24 +228,28 @@ class Data():
 
         if not bool(self.test):
             if not self.cpwl.has_rectangular_range:
-                # generate uniformly distributed samples in cpwl convex set
-                num_test_samples = 5000  # 3350
-                self.test['input'] = \
-                    self.generate_random_samples(num_test_samples)
+                if self.dataset_name.endswith('planes'):
+                    h = (self.cpwl.tri.points[:, 0].max() -
+                         self.cpwl.tri.points[:, 0].min())/400
+                    self.test['input'] = \
+                        Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
+                             x1_max=self.cpwl.tri.points[:, 0].max(),
+                             x2_min=self.cpwl.tri.points[:, 1].min(),
+                             x2_max=self.cpwl.tri.points[:, 1].max(),
+                             h=h,
+                             to_numpy=False,
+                             to_float32=True).x
 
-                # self.test['input'] = \
-                #     Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
-                #          x1_max=self.cpwl.tri.points[:, 0].max(),
-                #          x2_min=self.cpwl.tri.points[:, 1].min(),
-                #          x2_max=self.cpwl.tri.points[:, 1].max(),
-                #          h=0.01,
-                #          to_numpy=False,
-                #          to_float32=True).x
-                #
-                # # reject samples outside convex set
-                # idx = self.cpwl.tri.find_simplex(self.test['input'])
-                # self.test['input'] = self.test['input'][idx >= 0]
-
+                    # reject samples outside convex set
+                    idx = self.cpwl.tri.find_simplex(self.test['input'])
+                    self.test['input'] = self.test['input'][idx >= 0]
+                else:
+                    # generate uniformly distributed samples in cpwl convex set
+                    # the final number of test samples will be smaller because
+                    # samples outside lattice are discarded
+                    nb_samples = 5000
+                    self.test['input'] = \
+                        self.generate_random_samples(nb_samples)
             else:
                 # test set is sampled on a grid inside the convex hull of cpwl
                 self.test['input'] = self.cpwl.get_grid(h=0.01,
