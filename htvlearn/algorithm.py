@@ -44,7 +44,7 @@ class Algorithm():
         """
         if not isinstance(lattice_obj, Lattice):
             raise ValueError(f'lattice_obj is of type {type(lattice_obj)}.')
-        if not isinstance(lattice_obj, Data):
+        if not isinstance(data_obj, Data):
             raise ValueError(f'lattice_obj is of type {type(lattice_obj)}.')
         self.lat = lattice_obj
         self.data = data_obj
