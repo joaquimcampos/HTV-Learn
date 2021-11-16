@@ -229,19 +229,20 @@ class Data():
         if not bool(self.test):
             if not self.cpwl.has_rectangular_range:
                 # generate uniformly distributed samples in cpwl convex set
-                num_test_samples = 5000 # 3350
+                num_test_samples = 5000  # 3350
                 self.test['input'] = \
                     self.generate_random_samples(num_test_samples)
-                
-                # self.test['input'] = Grid(x1_min=self.delaunay['points'][:, 0].min(),
-                #                  x1_max=self.delaunay['points'][:, 0].max(),
-                #                  x2_min=self.delaunay['points'][:, 1].min(),
-                #                  x2_max=self.delaunay['points'][:, 1].max(),
-                #                  h=0.02,
-                #                  to_numpy=False,
-                #                  to_float32=True).x
-                
-                ## reject samples outside convex set
+
+                # self.test['input'] = \
+                #     Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
+                #          x1_max=self.cpwl.tri.points[:, 0].max(),
+                #          x2_min=self.cpwl.tri.points[:, 1].min(),
+                #          x2_max=self.cpwl.tri.points[:, 1].max(),
+                #          h=0.01,
+                #          to_numpy=False,
+                #          to_float32=True).x
+                #
+                # # reject samples outside convex set
                 # idx = self.cpwl.tri.find_simplex(self.test['input'])
                 # self.test['input'] = self.test['input'][idx >= 0]
 
@@ -626,8 +627,7 @@ class Data():
 
             # only retain points outside face convex hull
             aux_delaunay = scipy.spatial.Delaunay(points)
-            fine_grid = fine_grid[
-                aux_delaunay.find_simplex(fine_grid) < 0].numpy()
+            fine_grid = fine_grid[aux_delaunay.find_simplex(fine_grid) < 0]
             # add zeros around face
             new_vertices = np.concatenate(
                 (fine_grid, np.zeros((fine_grid.shape[0], 1))), axis=1)

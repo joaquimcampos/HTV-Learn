@@ -171,7 +171,7 @@ class Delaunay():
                       np.isclose(hull_points[:, 1], y_min) +
                       np.isclose(hull_points[:, 1], y_max)):
             return False
-        
+
         return True
 
     @staticmethod
