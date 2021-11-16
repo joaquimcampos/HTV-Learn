@@ -572,9 +572,9 @@ class Delaunay():
             grid (Grid):
                 Grid instance (see grid.py).
         """
-        if not self.has_rectangular_range:
-            raise ValueError(
-                'The triangulation does not have a rectangular range.')
+        # if not self.has_rectangular_range:
+        #     raise ValueError(
+        #         'The triangulation does not have a rectangular range.')
 
         # create image
         convex_hull_points = self.tri.points[self.convex_hull_points_idx]
