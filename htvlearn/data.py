@@ -230,7 +230,7 @@ class Data():
             if not self.cpwl.has_rectangular_range:
                 if self.dataset_name.endswith('planes'):
                     h = (self.cpwl.tri.points[:, 0].max() -
-                         self.cpwl.tri.points[:, 0].min())/400
+                         self.cpwl.tri.points[:, 0].min()) / 400
                     self.test['input'] = \
                         Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
                              x1_max=self.cpwl.tri.points[:, 0].max(),
@@ -370,7 +370,8 @@ class Data():
             noise_std = self.noise_ratio * (values.max() - values.min())
 
         if self.verbose:
-            print(f'Adding noise of standard deviation s = {noise_std}')
+            print('Adding noise of standard deviation '
+                  'sigma = {:.2E}'.format(noise_std))
         noise = torch.empty_like(values).normal_(std=noise_std)
 
         return values + noise
