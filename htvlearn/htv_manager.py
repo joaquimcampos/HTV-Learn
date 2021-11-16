@@ -148,19 +148,6 @@ class HTVManager(HTVProject):
 
         return y.detach().cpu().numpy()
 
-    def evaluate_lattice(self):
-        """Create and evaluate network on lattice."""
-        lat = Lattice(**self.params['lattice'])
-        print(f'Sampled lattice lsize: {lat.lsize}.')
-
-        lattice_grid = lat.lattice_to_standard(lat.lattice_grid.float())
-        z = self.forward_data(lat, lattice_grid)
-
-        new_C_mat = lat.flattened_C_to_C_mat(z)
-        lat.update_coefficients(new_C_mat)
-
-        return lat
-
     @staticmethod
     def forward_data(lattice_obj, input, **kwargs):
         """

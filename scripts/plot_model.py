@@ -8,6 +8,7 @@ from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
 from htvlearn.htv_manager import HTVManager
 from htvlearn.rbf import RBF
+from htvlearn.lattice import Lattice
 from htvlearn.delaunay import Delaunay
 from htvlearn.plots.plot_cpwl import Plot
 from htvlearn.htv_utils import (
@@ -42,18 +43,18 @@ def plot_model(args):
         htv = None
 
         if params['method'] == 'neural_net':
-            manager = NNManager(params, write=False)
+            manager = NNManager(params, log=False)
             if ckpt['htv_log']:
                 _, htv_model = NNManager.read_htv_log(ckpt['htv_log'])
                 htv = htv_model[-1]
 
         elif params['method'] == 'rbf':
-            manager = RBFManager(params, write=False)
+            manager = RBFManager(params, log=False)
             if ckpt['htv_log']:
                 htv = RBFManager.read_htv_log(ckpt['htv_log'])
 
         elif params['method'] == 'htv':
-            manager = HTVManager(params, write=False)
+            manager = HTVManager(params, log=False)
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]
 
@@ -63,7 +64,13 @@ def plot_model(args):
         data_obj = manager.data
         test_snr = compute_snr(data_obj.test['values'], test_mse)
         train_snr = compute_snr(data_obj.train['values'], train_mse)
-        percentage_nonzero = get_sparsity(manager.evaluate_lattice())
+        if params['method'] == "htv":
+            X_mat = ckpt['lattice']['final']['X_mat']
+            C_mat = ckpt['lattice']['final']['C_mat']
+            lattice_obj = Lattice(X_mat=X_mat, C_mat=C_mat)
+        else:
+            lattice_obj = manager.evaluate_lattice()
+        percentage_nonzero = get_sparsity(lattice_obj)
 
     if not args.no_gt:
         plot = Plot(data_obj, **params['plots'])

@@ -8,6 +8,7 @@ from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
 from htvlearn.rbf import RBF
+from htvlearn.lattice import Lattice
 from htvlearn.htv_manager import HTVManager
 from htvlearn.htv_utils import (
     compute_snr,
@@ -48,16 +49,22 @@ def print_model_from_json(args):
                else None)
 
         if params['method'] == 'neural_net':
-            manager = NNManager(params, write=False)
+            manager = NNManager(params, log=False)
         elif params['method'] == 'rbf':
-            manager = RBFManager(params, write=False)
+            manager = RBFManager(params, log=False)
         elif params['method'] == 'htv':
-            manager = HTVManager(params, write=False)
+            manager = HTVManager(params, log=False)
 
     data_obj = manager.data
     train_snr = compute_snr(data_obj.train['values'], train_mse)
     test_snr = compute_snr(data_obj.test['values'], test_mse)
-    percentage_nonzero = get_sparsity(manager.evaluate_lattice())
+    if params['method'] == "htv":
+        X_mat = ckpt['lattice']['final']['X_mat']
+        C_mat = ckpt['lattice']['final']['C_mat']
+        lattice_obj = Lattice(X_mat=X_mat, C_mat=C_mat)
+    else:
+        lattice_obj = manager.evaluate_lattice()
+    percentage_nonzero = get_sparsity(lattice_obj)
 
     print('\nTrain mse : {:.2E}'.format(train_mse))
     print('Test mse  : {:.2E}'.format(test_mse))
