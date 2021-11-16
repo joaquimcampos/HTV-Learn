@@ -264,15 +264,24 @@ class Data():
                 self.valid['values'] = self.test['values'].clone()
 
         if not bool(self.train):
-            # generate num_train_valid_samples uniformly distributed
-            # in cpwl convex set
+
             num_train_valid_samples = int(self.num_train)
-            x = self.generate_random_samples(num_train_valid_samples)
+
+            if self.dataset_name.endswith('planes'):
+                # generate grid in lattice reference
+                x_lat = torch.empty((num_train_valid_samples, 2))
+                x_lat.uniform_(-0.5, 0.5)
+                # convert to standard coordinates
+                x = (Lattice.hexagonal_matrix @ x_lat.t()).t()
+            else:
+                # generate num_train_valid_samples uniformly distributed
+                # in cpwl convex set
+                x = self.generate_random_samples(num_train_valid_samples)
 
             # training / validation split indices
             if not self.test_as_valid:
                 split_idx = int((1 - self.valid_fraction) *
-                                num_train_valid_samples)
+                                x.size(0))
             else:
                 # full training set, validation set = test set
                 split_idx = x.size(0)
