@@ -312,11 +312,13 @@ class Data():
                 self.train['values'] = \
                     self.add_noise_to_values(self.train['values'])
 
-            # effective number of samples (rounded to 1000)
-            num = int(np.floor(self.train['input'].size(0) / 1000.) * 1000)
-            idx = torch.randperm(self.train['input'].size(0))[:num]
-            self.train['input'] = self.train['input'][idx]
-            self.train['values'] = self.train['values'][idx]
+            if self.train['input'].size(0) >= 3000:
+                # effective number of samples (rounded to 1000)
+                num = int(np.floor(self.train['input'].size(0) / 1000.) * 1000)
+                idx = torch.randperm(self.train['input'].size(0))[:num]
+                self.train['input'] = self.train['input'][idx]
+                self.train['values'] = self.train['values'][idx]
+
             print('nb. of training data points : '
                   f'{self.train["input"].size(0)}')
 
