@@ -33,7 +33,7 @@ class BasePlot():
                 f'log_dir "{self.log_dir}" is not a valid directory')
 
     def verify_data_obj(self):
-        """ Verify that a data object exists and is valid"""
+        """Verify that a data object exists and is valid"""
         if self.data is None:
             raise ValueError('A data object does not exist.')
         elif not isinstance(self.data, Data):
@@ -178,7 +178,7 @@ class BasePlot():
 
     @staticmethod
     def get_scatter3d(x, y, z, marker_size=2):
-        """
+        r"""
         Get a scatter 3D plot (f: \R^2 \to \R)
 
         Args:

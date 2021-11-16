@@ -63,7 +63,6 @@ class NNDataLoader():
             labels (torch.Tensor):
                 labels corresponding to shuffled inputs.
         """
-
         permutation_idx = \
             torch.randperm(inputs.size(0)).to(device=inputs.device)
         inputs = torch.index_select(inputs, 0, permutation_idx)

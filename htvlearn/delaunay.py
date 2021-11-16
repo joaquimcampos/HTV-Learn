@@ -142,9 +142,7 @@ class Delaunay():
 
     @property
     def has_rectangular_range(self):
-        """
-        Check if convex hull of cpwl is rectangular.
-        """
+        """Check if convex hull of cpwl is rectangular."""
         convex_set_points = self.tri.points[self.convex_hull_points_idx]
 
         x_min = convex_set_points[:, 0].min()
@@ -169,7 +167,7 @@ class Delaunay():
     @staticmethod
     def _verify_input(points, values):
         """
-        Verifies user input points and values.
+        Verify user input points and values.
 
         Args:
             points:
@@ -261,7 +259,7 @@ class Delaunay():
 
     def _check_x_simplices(self, x_simplices, x):
         """
-        Verifies that either x_simplices is None. If so, returns x_simplices.
+        Verify that either x_simplices is None. If so, returns x_simplices.
         Otherwise, checks if x is not None and computes x_simplices from x.
 
         Args:
@@ -283,7 +281,7 @@ class Delaunay():
 
     def get_x_simplices_points(self, x_simplices=None, x=None):
         """
-        Gets locations of vertices from x_simplices (indexes of vertices)
+        Get locations of vertices from x_simplices (indexes of vertices)
         or x (input locations).
 
         If x_simplices is not given, x has to be given.
@@ -306,7 +304,7 @@ class Delaunay():
 
     def get_x_simplices_values(self, x_simplices=None, x=None):
         """
-        Gets values at the vertices from x_simplices (indexes of vertices)
+        Get values at the vertices from x_simplices (indexes of vertices)
         or x (input locations).
 
         If x_simplices is not given, x has to be given.

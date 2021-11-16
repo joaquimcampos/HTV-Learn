@@ -20,7 +20,7 @@ class HTVProject(MasterProject):
 
     @property
     def info_list(self):
-        """Returns list of info to log."""
+        """Return list of info to log."""
         return super().info_list + ['percentage_nonzero']
 
     def save_to_ckpt(self, lattice_dict):

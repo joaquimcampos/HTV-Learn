@@ -17,6 +17,7 @@ from htvlearn.data import (
 
 @pytest.fixture(autouse=True)
 def set_seed(request):
+    """Set random seed."""
     # Code that will run before
     seed = request.config.getoption("--seed")
     torch.manual_seed(int(seed))

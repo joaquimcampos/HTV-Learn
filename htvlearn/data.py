@@ -11,12 +11,14 @@ from htvlearn.grid import Grid
 
 class Hex():
     """Hexagonal lattice vectors"""
+
     v1 = Lattice.hexagonal_matrix[:, 0].numpy()
     v2 = Lattice.hexagonal_matrix[:, 1].numpy()
 
 
 class BoxSpline():
     """Three-directional hexagonal box spline"""
+
     center_points = np.array([0., 0.])
     border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
                               -Hex.v1, -Hex.v2, -Hex.v2 + Hex.v1])
@@ -29,6 +31,7 @@ class BoxSpline():
 
 class SimplicialSpline():
     """Simplicial spline with randomly positioned vertices"""
+
     np.random.seed(3)
     center_points = np.array([0., 0.]) + np.random.uniform(-0.2, 0.2, (2, ))
     border_points = np.array([Hex.v1, Hex.v2, -Hex.v1 + Hex.v2,
@@ -42,6 +45,7 @@ class SimplicialSpline():
 
 class CutPyramid():
     """Pyramid with flat top"""
+
     points = np.vstack((BoxSpline.center_points,
                         BoxSpline.border_points,
                         2 * BoxSpline.border_points,
@@ -54,6 +58,7 @@ class CutPyramid():
 
 class SimpleJunction():
     """A simple two-polytope junction"""
+
     points = np.array([[0., 0.], [1., 0.], [0., 1.], [1., 1.],
                        [0., 3. / 4], [1., 1. / 4]])
     values = np.array([0., 2. / 3, 2. / 3, 0., 1., 1.])
@@ -65,7 +70,7 @@ class SimpleJunction():
 
 def init_distorted_grid(size_=(3, 3), range_=(-1, 1)):
     """
-    Initializes a distorted grid.
+    Initialize a distorted grid.
 
     Args:
         size (2-tuple): grid size.
@@ -98,6 +103,7 @@ def init_distorted_grid(size_=(3, 3), range_=(-1, 1)):
 
 class DistortedGrid:
     """Dataset with random values in a distorted random grid"""
+
     points = init_distorted_grid(size_=(3, 3))
     values = (np.random.rand(points.shape[0], ) - 0.5)
 
@@ -349,7 +355,6 @@ class Data():
             points (np.array): size (M, 2).
             values (np.array): size (M,)
         """
-
         # points in lattice coordinates
         h = 0.1
         points = torch.tensor([[2 * h, 0.], [0., 2 * h],

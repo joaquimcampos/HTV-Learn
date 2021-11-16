@@ -18,6 +18,7 @@ class ReLUfcNet2D(nn.Module):
     fcL    -> N x h  (L=num_hidden_layers)
     fclast -> N x 1
     """
+
     def __init__(self,
                  num_hidden_layers=5,
                  num_hidden_neurons=50,
@@ -29,7 +30,6 @@ class ReLUfcNet2D(nn.Module):
             num_hidden_neurons (int):
                 number of hidden neurons
         """
-
         super().__init__()
         self.num_hidden_layers = num_hidden_layers
         self.num_hidden_neurons = num_hidden_neurons

@@ -79,22 +79,22 @@ class NNProject(MasterProject):
 
     @abstractproperty
     def model_state(self):
-        """Returns model state."""
+        """Return model state."""
         pass
 
     @abstractproperty
     def optimizer_state(self):
-        """Returns optimizer state."""
+        """Return optimizer state."""
         pass
 
     @abstractproperty
     def train_loss_log(self):
-        """Returns train loss log accross epochs."""
+        """Return train loss log accross epochs."""
         pass
 
     @abstractproperty
     def valid_loss_log(self):
-        """Returns valid loss log accross epochs."""
+        """Return valid loss log accross epochs."""
         pass
 
     def train_log_step(self, epoch, batch_idx, losses_dict):

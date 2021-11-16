@@ -14,7 +14,8 @@ import cvxopt
 
 
 class ArgCheck():
-    """ Class for input argument verification """
+    """Class for input argument verification"""
+
     @staticmethod
     def p_int(value):
         """
@@ -54,7 +55,7 @@ class ArgCheck():
 
 def size_str(input):
     """
-    Returns a string with the size of the input tensor
+    Return a string with the size of the input tensor
 
     Args:
         input (torch.Tensor)
@@ -274,7 +275,7 @@ def json_dump(results_dict, json_filename):
 
 def add_date_to_filename(filename):
     """
-    Adds current date to a filename.
+    Add current date to a filename.
 
     Args:
         filename (str)
@@ -291,7 +292,8 @@ def add_date_to_filename(filename):
 
 
 def frange(start, stop, step, n=None):
-    """return a WYSIWYG series of float values that mimic range behavior
+    """
+    Return a WYSIWYG series of float values that mimic range behavior
     by excluding the end point and not printing extraneous digits beyond
     the precision of the input numbers (controlled by n and automatically
     detected based on the string representation of the numbers passed).
@@ -346,7 +348,7 @@ def frange(start, stop, step, n=None):
 @contextmanager
 def silence_stdout():
     """
-    contextmanager for silencing stdout.
+    Contextmanager for silencing stdout.
 
     Usage:
         with silence_stdout():

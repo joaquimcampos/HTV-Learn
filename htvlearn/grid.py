@@ -43,7 +43,7 @@ class Grid:
 
     def generate_grid(self):
         """
-        Generates a 2D grid.
+        Generate a 2D grid.
 
         Saves:
             x:

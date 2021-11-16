@@ -10,9 +10,10 @@ from htvlearn.struct_default_values import structure, default_values
 
 
 # Fix the Acknowledgements (new Grant)
+# Check setup.cfg: ignore = W504,W605,D205,D100,D101,D102,D103,D104,D400
 def get_arg_parser():
     """
-    Parses command-line arguments.
+    Parse command-line arguments.
 
     The default values are fetched from the 'default_values' dictionary.
     (see struct_default_values.py)
@@ -20,7 +21,6 @@ def get_arg_parser():
     Returns:
         parser (argparse.ArgumentParser)
     """
-
     parser = argparse.ArgumentParser(
         description='HTV for Supervised Learning and '
         'Measuring Model Complexity.')
@@ -227,7 +227,7 @@ def get_arg_parser():
 
 def verify_params(params):
     """
-    Verifies the parameters (e.g. checks for mutual inclusivity/exclusivity).
+    Verify the parameters (e.g. check for mutual inclusivity/exclusivity).
 
     If not specified by the user via the command-line, a parameter
     gets the default value from the 'default_values' dictionary.
@@ -266,7 +266,7 @@ def verify_params(params):
 
 def main_prog(params, isloaded_params=False):
     """
-    Main program that initializes the Manager with the parameters
+    Initialize the Manager with the parameters
     and runs the training.
 
     It first verifies the params dictionary, if necessary.

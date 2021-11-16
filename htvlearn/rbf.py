@@ -114,7 +114,7 @@ class RBF():
         return H_mat
 
     def evaluate(self, x, **kwargs):
-        """
+        r"""
         Evaluate RBF output at locations x.
 
         f(\V x) = self.H_mat @ self.coeffs, where self.H_mat is constructed

@@ -21,7 +21,7 @@ class Operators():
                 training datapoints.
             lmbda (None or float):
                 If not None, multiply regularization matrix by this value.
-            """
+        """
         self.input = input
         self.lmbda = lmbda
         self.H_mat_sparse = self.get_forward_op(lattice_obj, self.input)

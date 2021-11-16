@@ -9,7 +9,7 @@ from htvlearn.grid import Grid
 
 
 class Lattice():
-    """
+    r"""
     Class for cpwl functions ``f:\R² \to \R`` with a uniform hexagonal lattice
     domain. This class of cpwl functions is in the span of linear hexagonal
     box splines shifted on the hexagonal lattice. A function in this space is
@@ -35,6 +35,7 @@ class Lattice():
     . mat (matrix) format (n,m) - vectors along columns
     . batch_mat format - batch of matrices (b,n,m)
     """
+
     ldim = 2  # lattice dimension
     # barycentric coordinates for simplex centers (approximately)
     centers_barycentric_coordinates = Tensor([0.333, 0.333, 0.334])
@@ -115,7 +116,8 @@ class Lattice():
 
     @classmethod
     def init_hexagonal_lattice(cls, lsize=10, C_init='zero', **kwargs):
-        """ Initialize hexagonal lattice.
+        """
+        Initialize hexagonal lattice.
 
         Args:
             lsize (int):
@@ -591,7 +593,7 @@ class Lattice():
     @staticmethod
     def get_halfplane_mask(x_lat_fractional):
         """
-        Using the halfplane method, get the mask which is 1 for the
+        Use the halfplane method to get the mask which is 1 for the
         tensors which live in the second simplex and 0 otherwise.
 
         Args:

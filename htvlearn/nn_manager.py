@@ -230,7 +230,7 @@ class NNManager(NNProject):
 
     def validation_step(self, epoch):
         """
-        Does one validation step. Saves results on checkpoint.
+        Perform one validation step. Saves results on checkpoint.
 
         Args:
             epoch (int).

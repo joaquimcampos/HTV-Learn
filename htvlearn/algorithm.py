@@ -13,7 +13,7 @@ from htvlearn.htv_utils import csr_to_spmatrix
 
 
 class Algorithm():
-    """ Class for the HTV minimization algorithm """
+    """Class for the HTV minimization algorithm"""
 
     eps = 1e-4  # epsilon to assess sparsity
 
@@ -75,7 +75,7 @@ class Algorithm():
         self.results_dict = {}
 
     def run_admm(self):
-        """ Learning using ADMM.
+        """Learning using ADMM.
 
         In this example we solve the optimization problem
             min_x  ||H_op(z) - x_values||_2^2 + lam * ||L_op(z)||_1
@@ -122,7 +122,7 @@ class Algorithm():
 
     def setup_admm(self):
         """
-        Setup for the admm algorithm.
+        Perform setup for the admm algorithm.
 
         Returns:
             z_odl (odl.set.space.LinearSpaceElement)
@@ -180,7 +180,7 @@ class Algorithm():
         return z_odl, f, g, stack_op, tau, sigma, callback
 
     def run_simplex(self):
-        """ Performs simplex to sparsify ADMM solution
+        """Perform simplex to sparsify ADMM solution
 
         Solves the problem:
         minimize(s, x) c_matrix^T x
@@ -243,7 +243,7 @@ class Algorithm():
 
     def setup_simplex(self):
         """
-        Setup for the simplex algorithm.
+        Perform setup for the simplex algorithm.
 
         Setup for the problem:
         minimize(s, x) c_matrix^T x

@@ -37,7 +37,7 @@ class MasterProject(ABC):
             self.init_json()
 
     def init_data(self):
-        """ Initialize data """
+        """Initialize data"""
         self.params['data']['log_dir'] = self.log_dir_model
         self.data = Data(**self.params['data'])
 
@@ -55,8 +55,9 @@ class MasterProject(ABC):
             print('\nUsing CPU.')
 
     def init_log(self):
-        """ Create Log directory for training the model as :
-            self.params["log_dir"]/self.params["model_name"]/
+        """
+        Create Log directory for training the model as :
+        self.params["log_dir"]/self.params["model_name"]/
         """
         if not os.path.isdir(self.log_dir_model):
             os.makedirs(self.log_dir_model)
@@ -167,7 +168,7 @@ class MasterProject(ABC):
 
     def restore_ckpt_params(self):
         """
-        Attempts to restore a checkpoint if resuming training or testing
+        Attempt to restore a checkpoint if resuming training or testing
         a model.
 
         If successful, it gets the loaded checkpoint and merges the saved
@@ -201,7 +202,7 @@ class MasterProject(ABC):
     @property
     def load_ckpt(self):
         """
-        Returns True if loading a checkpoint and restoring its parameters,
+        Return True if loading a checkpoint and restoring its parameters,
         for resuming training or testing a model. Otherwise, returns False.
         """
         if ('ckpt_filename' in self.params and self.params["ckpt_filename"]
@@ -247,7 +248,7 @@ class MasterProject(ABC):
     @classmethod
     def load_ckpt_params(cls, ckpt_filename, flatten=True, map_loc=None):
         """
-        Returns the ckpt dictionary and the parameters saved
+        Return the ckpt dictionary and the parameters saved
         in a checkpoint file.
 
         Args:
@@ -269,7 +270,7 @@ class MasterProject(ABC):
     @staticmethod
     def get_loaded_ckpt(ckpt_filename, map_loc=None):
         """
-        Returns a loaded checkpoint (ckpt dictionary)
+        Return a loaded checkpoint (ckpt dictionary)
         from ckpt_filename, if it exists.
 
         Args:
