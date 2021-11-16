@@ -5,7 +5,7 @@ import argparse
 from htvlearn.htv_manager import HTVManager
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
-from htvlearn.htv_utils import ArgCheck, assign_structure_recursive
+from htvlearn.htv_utils import ArgCheck, assign_tree_structure
 from htvlearn.struct_default_values import structure, default_values
 
 
@@ -289,7 +289,7 @@ def main_prog(params, isloaded_params=False):
 
     # assign recursive structure to params according
     # to structure in struct_default_values.py
-    params = assign_structure_recursive(params, structure)
+    params = assign_tree_structure(params, structure)
 
     if params['method'] == 'htv':
         manager = HTVManager(params)
