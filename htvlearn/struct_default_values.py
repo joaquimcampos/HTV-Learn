@@ -45,7 +45,8 @@ default_values = {
     'batch_size': 100,
     'num_workers': 4,  # number of subprocesses to use for data loading.
     # verbose
-    'verbose': False
+    'verbose': False,
+    'resume': False
 }
 
 # This tree defines the strcuture of self.params in the Project() class.
