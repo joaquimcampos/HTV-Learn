@@ -10,6 +10,7 @@ from htvlearn.rbf_project import RBFProject
 from htvlearn.rbf import RBF
 from htvlearn.hessian import get_finite_second_diff_Hessian
 from htvlearn.htv_utils import compute_mse_snr
+from htvlearn.lattice import Lattice
 
 
 class RBFManager(RBFProject):
@@ -160,6 +161,19 @@ class RBFManager(RBFProject):
         print(f'==> Finished. Run time: {run_time} (h:min:sec).')
 
         return y.numpy()
+
+    def evaluate_lattice(self):
+        """Create and evaluate network on lattice."""
+        lat = Lattice(**self.params['lattice'])
+        print(f'Sampled lattice lsize: {lat.lsize}.')
+
+        lattice_grid = lat.lattice_to_standard(lat.lattice_grid.float())
+        z = self.forward_data(lattice_grid)
+
+        new_C_mat = lat.flattened_C_to_C_mat(z)
+        lat.update_coefficients(new_C_mat)
+
+        return lat
 
     def forward_data(self, input, *args, **kwargs):
         """

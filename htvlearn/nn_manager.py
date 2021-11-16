@@ -15,6 +15,7 @@ from htvlearn.hessian import (
     get_exact_Hessian,
     get_finite_second_diff_Hessian
 )
+from htvlearn.lattice import Lattice
 
 #########################################################################
 # MANAGER
@@ -451,6 +452,19 @@ class NNManager(NNProject):
             '(mse: {:.7f}, loss: {:.7f})'.format(mse, loss)
 
         return mse, output
+
+    def evaluate_lattice(self):
+        """Create and evaluate network on lattice."""
+        lat = Lattice(**self.params['lattice'])
+        print(f'Sampled lattice lsize: {lat.lsize}.')
+
+        lattice_grid = lat.lattice_to_standard(lat.lattice_grid.float())
+        z = self.forward_data(lattice_grid)
+
+        new_C_mat = lat.flattened_C_to_C_mat(z)
+        lat.update_coefficients(new_C_mat)
+
+        return lat
 
     def forward_data(self, inputs, batch_size=64):
         """

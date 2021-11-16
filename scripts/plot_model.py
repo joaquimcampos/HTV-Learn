@@ -12,6 +12,7 @@ from htvlearn.delaunay import Delaunay
 from htvlearn.plots.plot_cpwl import Plot
 from htvlearn.htv_utils import (
     compute_snr,
+    get_sparsity,
     silence_stdout
 )
 
@@ -62,6 +63,7 @@ def plot_model(args):
         data_obj = manager.data
         test_snr = compute_snr(data_obj.test['values'], test_mse)
         train_snr = compute_snr(data_obj.train['values'], train_mse)
+        percentage_nonzero = get_sparsity(manager.evaluate_lattice())
 
     if not args.no_gt:
         plot = Plot(data_obj, **params['plots'])
@@ -87,6 +89,7 @@ def plot_model(args):
     print('Test mse  : {:.2E}'.format(test_mse))
     print('Train snr : {:.2f} dB'.format(train_snr))
     print('Test snr  : {:.2f} dB'.format(test_snr))
+    print('% nonzero : {:.2f}'.format(percentage_nonzero))
 
     if htv is not None:
         if isinstance(htv, dict):

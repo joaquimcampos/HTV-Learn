@@ -8,9 +8,13 @@ import math
 from datetime import datetime
 from contextlib import contextmanager
 
+import torch
 import numpy as np
 import json
 import cvxopt
+
+from htvlearn.operators import Operators
+from htvlearn.algorithm import Algorithm
 
 
 class ArgCheck():
@@ -360,3 +364,32 @@ def silence_stdout():
         yield new_target
     finally:
         sys.stdout = old_target
+
+
+def get_sparsity(lat):
+    """Return percentage of nonzero slopes in lat.
+
+    Args:
+        lat (Lattice): instance of Lattice class
+    """
+    # Initialize operators
+    placeholder_input = torch.tensor([[0., 0]])
+    op = Operators(lat, placeholder_input)
+    # convert z, L, H to np.float64 (simplex requires this)
+    L_mat_sparse = op.L_mat_sparse.astype(np.float64)
+    z = lat.flattened_C
+
+    # # compute ||Lz||_1
+    # htv_loss = np.linalg.norm(L_z, ord=1)
+    # print('HTV: {:.2f}'.format(htv_loss))
+
+    # compute ||Lz||_0
+    L_z = L_mat_sparse.dot(z.numpy())
+    L_z_zero_idx = np.where(np.absolute(L_z) <= Algorithm.eps)[0]
+
+    fraction_zero = 1.
+    if L_z.shape[0] != 0:
+        fraction_zero = L_z_zero_idx.shape[0] / L_z.shape[0]
+    percentage_nonzero = (100. - fraction_zero * 100)
+
+    return percentage_nonzero

@@ -8,6 +8,7 @@ from htvlearn.algorithm import Algorithm
 from htvlearn.operators import Operators
 from htvlearn.hessian import get_finite_second_diff_Hessian
 from htvlearn.htv_utils import compute_mse_snr
+from htvlearn.lattice import Lattice
 
 
 class HTVManager(HTVProject):
@@ -146,6 +147,19 @@ class HTVManager(HTVProject):
             y = torch.cat((y, out), dim=0)
 
         return y.detach().cpu().numpy()
+
+    def evaluate_lattice(self):
+        """Create and evaluate network on lattice."""
+        lat = Lattice(**self.params['lattice'])
+        print(f'Sampled lattice lsize: {lat.lsize}.')
+
+        lattice_grid = lat.lattice_to_standard(lat.lattice_grid.float())
+        z = self.forward_data(lat, lattice_grid)
+
+        new_C_mat = lat.flattened_C_to_C_mat(z)
+        lat.update_coefficients(new_C_mat)
+
+        return lat
 
     @staticmethod
     def forward_data(lattice_obj, input, **kwargs):
