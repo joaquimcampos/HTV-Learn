@@ -3,38 +3,40 @@ Define default values of parameters and desired structure for the
 parameters dictionary.
 """
 
+# defaults are for HTV method
+# on quad_top_planes dataset
 default_values = {
-    'method': 'neural_net',
-    'lmbda': 0.01,
+    'method': 'htv',
+    'lmbda': 3e-3,  # 1e-1 for RBF
     'no_htv': False,
     # logs-related
     'log_dir': 'output',
-    'model_name': 'htv-output',
+    'model_name': 'cpwl-model',
     # data
-    'dataset_name': 'cut_face_gaps',
-    'num_train': 5000,
+    'dataset_name': 'quad_top_planes',
+    'num_train': 250,
     'data_dir': './data',
     'test_as_valid': False,
-    'noise_ratio': 0.,
+    'noise_ratio': 0.061,
     'seed': -1,
     'valid_fraction': 0.2,
     # Lattice
-    'lsize': 256,
+    'lsize': 64,
     'C_init': 'zero',  # coefficient initialization
     # HTV minimization algorithm
-    'admm_iter': 100000,
-    'simplex': False,
+    'admm_iter': 200000,
+    'simplex': True,
     # RBF
-    'eps': 15,  # kernel size
+    'eps': 5,  # kernel size
     # Neural Net
     'net_model': 'relufcnet2d',
     'htv_mode': 'finite_diff_differential',
-    'device': 'cuda:0',
-    'num_hidden_layers': 5,
-    'num_hidden_neurons': 50,
+    'device': 'cpu',
+    'num_hidden_layers': 4,
+    'num_hidden_neurons': 40,
     'weight_decay': 1e-6,
-    'milestones': [850, 920],
-    'num_epochs': 1000,
+    'milestones': [175, 225],
+    'num_epochs': 250,
     'log_step': None,
     'valid_log_step': None,
     'ckpt_filename': None,
@@ -42,7 +44,7 @@ default_values = {
     'ckpt_nmax_files': 3,  # max number of saved *_net_*.ckpt
     # checkpoint files at a time. Set to -1 if not restricted. '
     # dataloader
-    'batch_size': 100,
+    'batch_size': 10,
     'num_workers': 4,  # number of subprocesses to use for data loading.
     # verbose
     'verbose': False,
