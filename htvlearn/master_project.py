@@ -206,7 +206,7 @@ class MasterProject(ABC):
         for resuming training or testing a model. Otherwise, returns False.
         """
         if ('ckpt_filename' in self.params and self.params["ckpt_filename"]
-                is not None) or (self.params["resume"] is True):
+                is not None) or (self.params["restore"] is True):
             return True
         else:
             return False

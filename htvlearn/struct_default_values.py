@@ -46,7 +46,6 @@ default_values = {
     'num_workers': 4,  # number of subprocesses to use for data loading.
     # verbose
     'verbose': False,
-    'resume': False,
 }
 
 # epsilon to assess sparsity
