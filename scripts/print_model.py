@@ -42,11 +42,13 @@ def print_model(args):
                 htv = htv_model[-1]
 
         elif params['method'] == 'rbf':
+            params['device'] = 'cpu'
             manager = RBFManager(params, log=False)
             if ckpt['htv_log']:
                 htv = RBFManager.read_htv_log(ckpt['htv_log'])
 
         elif params['method'] == 'htv':
+            params['device'] = 'cpu'
             manager = HTVManager(params, log=False)
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]

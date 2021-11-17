@@ -51,8 +51,10 @@ def print_model_from_json(args):
         if params['method'] == 'neural_net':
             manager = NNManager(params, log=False)
         elif params['method'] == 'rbf':
+            params['device'] = 'cpu'
             manager = RBFManager(params, log=False)
         elif params['method'] == 'htv':
+            params['device'] = 'cpu'
             manager = HTVManager(params, log=False)
 
     data_obj = manager.data
