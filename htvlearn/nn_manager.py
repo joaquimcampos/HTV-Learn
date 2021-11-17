@@ -8,7 +8,11 @@ from functools import partial
 import torch.autograd.functional as AF
 
 from htvlearn.htv_utils import compute_mse_snr
-from htvlearn.networks import GELUfcNet2D, ReLUfcNet2D
+from htvlearn.networks import (
+    ReLUfcNet2D,
+    LeakyReLUfcNet2D,
+    GELUfcNet2D
+)
 from htvlearn.nn_project import NNProject
 from htvlearn.hessian import (
     get_exact_grad_Hessian,
@@ -77,6 +81,8 @@ class NNManager(NNProject):
 
         if params['net_model'] == 'relufcnet2d':
             NetworkModule = ReLUfcNet2D
+        elif params['net_model'] == 'leakyrelufcnet2d':
+            NetworkModule = LeakyReLUfcNet2D
         elif params['net_model'] == 'gelufcnet2d':
             NetworkModule = GELUfcNet2D
         else:
@@ -284,7 +290,7 @@ class NNManager(NNProject):
                           'computations, in general. Prefer setting '
                           '"htv_mode" to "finite_diff_differential".')
             grid = self.data.cpwl.get_grid(h=0.01)
-            if self.params['net_model'] == 'relufcnet2d':
+            if self.params['net_model'].endswith('relufcnet2d'):
                 # cpwl function -> exact gradient + finite first differences
                 #  to compute hessian
                 Hess = get_exact_grad_Hessian(

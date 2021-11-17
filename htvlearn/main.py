@@ -136,7 +136,7 @@ def get_arg_parser():
     parser.add_argument(
         '--net_model',
         type=str,
-        choices=['relufcnet2d', 'gelufcnet2d'],
+        choices=['relufcnet2d', 'leakyrelufcnet2d', 'gelufcnet2d'],
         help='Neural network model to train. '
         f'(default: {default_values["net_model"]})')
 
