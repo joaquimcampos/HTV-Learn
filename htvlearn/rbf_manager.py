@@ -30,7 +30,7 @@ class RBFManager(RBFProject):
             # is_ckpt_loaded=True if a checkpoint was successfully loaded.
             is_ckpt_loaded = self.restore_ckpt_params()
             if is_ckpt_loaded is True:
-                self.restore_model_data()
+                self.restore_data()
 
         self.rbf = RBF(self.data, **self.params['rbf'])
 
@@ -171,7 +171,7 @@ class RBFManager(RBFProject):
         z = self.forward_data(lattice_grid)
 
         new_C_mat = lat.flattened_C_to_C_mat(z)
-        lat.update_coefficients(new_C_mat)
+        lat.update_coefficients(new_C_mat.float())
 
         return lat
 

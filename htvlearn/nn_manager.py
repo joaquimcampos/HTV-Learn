@@ -468,7 +468,7 @@ class NNManager(NNProject):
         z = self.forward_data(lattice_grid)
 
         new_C_mat = lat.flattened_C_to_C_mat(z)
-        lat.update_coefficients(new_C_mat)
+        lat.update_coefficients(new_C_mat.float())
 
         return lat
 
