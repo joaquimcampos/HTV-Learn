@@ -212,9 +212,6 @@ class Data():
             elif self.dataset_name.endswith('planes'):
                 self.delaunay['points'], self.delaunay['values'] = \
                     self.init_planes()
-                # overwrite noise standard deviation
-                self.noise_std = (self.noise_ratio *
-                                  self.delaunay['values'].max())
 
             elif 'face' in self.dataset_name:
                 self.delaunay['points'], self.delaunay['values'] = \
@@ -257,7 +254,7 @@ class Data():
                                                         to_float32=True).x
 
             self.test['values'] = self.cpwl.evaluate(self.test['input'])
-            print(f'nb. of test data points : {self.test["input"].size(0)}')
+            print(f'\nnb. of test data points : {self.test["input"].size(0)}')
 
             if (not bool(self.valid)) and (self.test_as_valid is True):
                 self.valid['input'] = self.test['input'].clone()
@@ -420,10 +417,10 @@ class Data():
 
         return points.numpy(), values.numpy()
 
-    @classmethod
-    def init_planes(cls):
+    def init_planes(self):
         """
         Initialize the planes dataset.
+        Sets self.noise_std.
 
         Returns:
             points (torch.tensor): size (M, 2).
@@ -431,8 +428,8 @@ class Data():
         """
         # fit planes function in the lattice
         pad = 0.08
-        x_min, _, x_max, _ = cls.get_data_boundaries(hw_ratio=0.01, pad=pad)
-        _, y_min, _, y_max = cls.get_data_boundaries(hw_ratio=100, pad=pad)
+        x_min, _, x_max, _ = self.get_data_boundaries(hw_ratio=0.01, pad=pad)
+        _, y_min, _, y_max = self.get_data_boundaries(hw_ratio=100, pad=pad)
 
         dx = (x_max - x_min) / 100  # delta x step
         dy = (y_max - y_min) / 100  # delta y step
@@ -456,20 +453,23 @@ class Data():
                                   [3, 2, 5]])
 
         # check values of vertices so that there is a seamless plane junction
-        x_v6 = cls.get_zero_loc(vert, simplices, 2, 3)
-        x_v7 = cls.get_zero_loc(vert, simplices, 4, 5)
+        x_v6 = self.get_zero_loc(vert, simplices, 2, 3)
+        x_v7 = self.get_zero_loc(vert, simplices, 4, 5)
         br = Lattice.bottom_right_std
         ur = Lattice.upper_right_std
 
         # add x_v6, x_v7, and lattice corners
         new_vert = torch.tensor([[x_v6[0], x_v6[1], 0.],  # 6
                                  [x_v7[0], x_v7[1], 0.],  # 7
-                                 [br[0], br[1], 0.],  # 8
-                                 [-br[0], -br[1], 0.],  # 9
-                                 [ur[0], ur[1], 0.],  # 10
-                                 [-ur[0], -ur[1], 0.]])  # 11
+                                 [-ur[0], -ur[1], 0.],  # 8
+                                 [br[0], br[1], 0.],  # 9
+                                 [-br[0], -br[1], 0.],  # 10
+                                 [ur[0], ur[1], 0.]])  # 11
 
         vert = torch.cat((vert, new_vert), dim=0)
+
+        # overwrite noise standard deviation
+        self.noise_std = (self.noise_ratio * vert[:, 2].max())
 
         # add linear term to first vertices
         a = torch.tensor([0.1, 0.05])
