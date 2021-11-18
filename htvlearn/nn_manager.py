@@ -523,13 +523,7 @@ class NNManager(NNProject):
 
         # dictio is list of dictionaries containing 'p': htv_p for each epoch
         # or a single value in the case of CPWL networks
-        values_list = list(htv_log.values())
-        if 'finite_diff_differential' in values_list[0] or \
-                'exact_differential' in values_list[0]:
-            # TODO: Remove backward compatibility
-            dictio = [val[list(val)[0]] for val in values_list]
-        else:
-            dictio = values_list
+        dictio = list(htv_log.values())
 
         if isinstance(dictio[0], dict):
             # p in schatten-p norms
