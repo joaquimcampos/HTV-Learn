@@ -126,10 +126,13 @@ class Delaunay():
         hull_values = self.tri.values[self.convex_hull_points_idx]
         # fit a linear function through three convex hull points
         # solve f(hull_points) = a^(hull_points) + b
-        vert = np.concatenate((hull_points,
-                               hull_values[:, np.newaxis]),
+        # vert size: (1, 3, 3)
+        vert = np.concatenate((hull_points[0:3],
+                               hull_values[0:3, np.newaxis]),
                               axis=1)
+        # plane_coeff size: (1, 4)
         plane_coeff = Lattice.solve_method(torch.from_numpy(vert).unsqueeze(0))
+        # affine_coeff size: (1, 3)
         affine_coeff = Lattice.get_affine_coeff_from_plane_coeff(plane_coeff)
         affine_coeff = affine_coeff.numpy()
         z_linear = ((affine_coeff[:, 0:2] * hull_points).sum(axis=1) +
