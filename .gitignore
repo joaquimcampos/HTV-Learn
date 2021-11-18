@@ -1,5 +1,7 @@
 data/*
 !data/*.obj
 __pycache__/
+.pytest_cache/
+*.log
 output/
 logo/

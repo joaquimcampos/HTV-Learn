@@ -417,10 +417,10 @@ class Data():
 
         return points.numpy(), values.numpy()
 
-    def init_planes(self):
+    @classmethod
+    def init_zero_boundary_planes(cls):
         """
-        Initialize the planes dataset.
-        Sets self.noise_std.
+        Initialize the planes dataset with zero boundaries.
 
         Returns:
             points (torch.tensor): size (M, 2).
@@ -428,8 +428,8 @@ class Data():
         """
         # fit planes function in the lattice
         pad = 0.08
-        x_min, _, x_max, _ = self.get_data_boundaries(hw_ratio=0.01, pad=pad)
-        _, y_min, _, y_max = self.get_data_boundaries(hw_ratio=100, pad=pad)
+        x_min, _, x_max, _ = cls.get_data_boundaries(hw_ratio=0.01, pad=pad)
+        _, y_min, _, y_max = cls.get_data_boundaries(hw_ratio=100, pad=pad)
 
         dx = (x_max - x_min) / 100  # delta x step
         dy = (y_max - y_min) / 100  # delta y step
@@ -453,8 +453,8 @@ class Data():
                                   [3, 2, 5]])
 
         # check values of vertices so that there is a seamless plane junction
-        x_v6 = self.get_zero_loc(vert, simplices, 2, 3)
-        x_v7 = self.get_zero_loc(vert, simplices, 4, 5)
+        x_v6 = cls.get_zero_loc(vert, simplices, 2, 3)
+        x_v7 = cls.get_zero_loc(vert, simplices, 4, 5)
         br = Lattice.bottom_right_std
         ur = Lattice.upper_right_std
 
@@ -467,16 +467,44 @@ class Data():
                                  [ur[0], ur[1], 0.]])  # 11
 
         vert = torch.cat((vert, new_vert), dim=0)
+        points, values = vert[:, 0:2], vert[:, 2]
 
-        # overwrite noise standard deviation
-        self.noise_std = (self.noise_ratio * vert[:, 2].max())
+        return points, values
 
-        # add linear term to first vertices
+    @staticmethod
+    def add_linear_func(points, values):
+        """
+        Add a linear term to the dataset.
+
+        Args:
+            points (torch.tensor): size (M, 2).
+            values (torch.tensor): size (M,)
+        Returns:
+            values (torch.tensor): size (M,).
+        """
+        # add linear term to vertices
         a = torch.tensor([0.1, 0.05])
         b = torch.tensor([-0.05])
-        vert[:, 2] += (vert[:, 0:2] * a.unsqueeze(0)).sum(1) + b
+        values += (points * a.unsqueeze(0)).sum(1) + b
 
-        points, values = vert[:, 0:2].numpy(), vert[:, 2].numpy()
+        return values
+
+    def init_planes(self):
+        """
+        Initialize the planes dataset. Set self.noise_std.
+
+        Returns:
+            points (torch.tensor): size (M, 2).
+            values (torch.tensor): size (M,)
+        """
+        # initialize planes dataset with zero boundaries
+        points, values = self.init_zero_boundary_planes()
+        # overwrite noise standard deviation
+        self.noise_std = (self.noise_ratio * values.max())
+        # add linear function to dataset
+        values = self.add_linear_func(points, values)
+        # convert to numpy
+        points, values = points.numpy(), values.numpy()
 
         return points, values
 

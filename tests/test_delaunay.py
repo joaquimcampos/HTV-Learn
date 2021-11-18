@@ -73,7 +73,8 @@ class TestDelaunay:
         plot.plot_delaunay(cpwl)
 
     def test_is_admissible(self):
-        points, values = Data.init_planes()
+        points, values = Data.init_zero_boundary_planes()
+        values = Data.add_linear_func(points, values)
         cpwl = Delaunay(points=points, values=values)
         assert cpwl.is_admissible is True
 
