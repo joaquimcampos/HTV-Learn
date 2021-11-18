@@ -124,12 +124,39 @@ class Delaunay():
         """
         hull_points = self.tri.points[self.convex_hull_points_idx]
         hull_values = self.tri.values[self.convex_hull_points_idx]
-        # fit a linear function through three convex hull points
-        # solve f(hull_points) = a^(hull_points) + b
+
+        # fit a linear function through three non-colinear convex hull
+        # points, i.e. solve f(hull_points) = a^(hull_points) + b, for a and b.
+
+        # the first two points correspond to the min/max x coordinate
+        first_idx = np.argmin(hull_points[:, 0])
+        second_idx = np.argmax(hull_points[:, 0])
+
+        # to find the third point, we form the matrix
+        # x1 x2 x3
+        # y1 y2 y3
+        # 1   1  1
+        # and check for which (x3, y3) it has the largest determinant:
+        mat = np.ones((hull_points.shape[0], 3, 3))
+        mat[:, 0:2, 0] = hull_points[first_idx]
+        mat[:, 0:2, 1] = hull_points[second_idx]
+        mat[:, 0:2, 2] = hull_points
+
+        det = np.abs(np.linalg.det(mat))
+        third_idx = np.argmax(np.abs(det))
+
+        # 3 points
+        points = np.concatenate((hull_points[first_idx][np.newaxis, :],
+                                 hull_points[second_idx][np.newaxis, :],
+                                 hull_points[third_idx][np.newaxis, :]),
+                                axis=0)
+        values = np.array([hull_values[first_idx],
+                           hull_values[second_idx],
+                           hull_values[third_idx]])
         # vert size: (1, 3, 3)
-        vert = np.concatenate((hull_points[0:3],
-                               hull_values[0:3, np.newaxis]),
+        vert = np.concatenate((points, values[:, np.newaxis]),
                               axis=1)
+
         # plane_coeff size: (1, 4)
         plane_coeff = Lattice.solve_method(torch.from_numpy(vert).unsqueeze(0))
         # affine_coeff size: (1, 3)
