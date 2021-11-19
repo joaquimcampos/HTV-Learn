@@ -700,7 +700,7 @@ class Lattice():
         x_diff = vertices_std[:, 0:2, :] - vertices_std[:, 2:3, :]
         assert x_diff.size() == (m, 2, 2)
 
-        a1_a2, _ = torch.solve(z_diff.mul(-1), x_diff)
+        a1_a2 = torch.linalg.solve(x_diff, z_diff.mul(-1))
         assert a1_a2.size() == (m, 2, 1)
         a1_a2 = a1_a2.squeeze(-1)
         assert a1_a2.size() == (m, 2)

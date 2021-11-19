@@ -537,7 +537,7 @@ class Data():
 
         B = -affine_coeff[:, -1:]
         A = affine_coeff[:, 0:2]
-        x, _ = torch.solve(B, A)
+        x = torch.linalg.solve(A, B)
 
         return x.squeeze(-1)
 
