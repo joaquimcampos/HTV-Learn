@@ -120,6 +120,7 @@ class Data():
                  test_as_valid=False,
                  noise_ratio=0.,
                  seed=-1,
+                 add_lat_vert=False,
                  verbose=False,
                  **kwargs):
         """
@@ -143,6 +144,8 @@ class Data():
                 the data range.
             seed (int):
                 seed for random generation. If negative, no seed is set.
+            add_lat_vert (bool):
+                if True, add lattice extreme points (face dataset).
             verbose (bool):
                 print more info.
         """
@@ -160,6 +163,7 @@ class Data():
         self.test_as_valid = test_as_valid
         self.noise_ratio = noise_ratio
         self.seed = seed
+        self.add_lat_vert = add_lat_vert
         self.verbose = verbose
         # if not overwritten, computed in add_noise_to_values()
         # from self.noise_ratio and dataset height range
@@ -218,7 +222,8 @@ class Data():
                     self.init_face(self.data_dir,
                                    cut=True
                                    if 'cut' in self.dataset_name
-                                   else False)
+                                   else False,
+                                   add_lat_vert=self.add_lat_vert)
 
         self.cpwl = Delaunay(points=self.delaunay['points'],
                              values=self.delaunay['values'])
@@ -595,7 +600,7 @@ class Data():
         return cleaned_vert
 
     @classmethod
-    def init_face(cls, data_dir, cut=False):
+    def init_face(cls, data_dir, cut=False, add_lat_vert=False):
         """
         Initialize the face dataset.
 
@@ -603,6 +608,8 @@ class Data():
             cut (bool):
                 if True, use only a smaller section of the face.
                 Otherwise, use full face with zero boundaries.
+            add_lat_vert (bool):
+                if True, add lattice extreme points to dataset.
 
         Returns:
             points (torch.tensor): size (M, 2).
@@ -678,6 +685,18 @@ class Data():
             vert = np.concatenate((vert, new_vertices), axis=0)
 
         vert = cls.fit_in_lattice(vert)
+
+        if add_lat_vert is True:
+            br = Lattice.bottom_right_std
+            ur = Lattice.upper_right_std
+            # add x_v6, x_v7, and lattice corners
+            new_vert = torch.tensor([[-ur[0], -ur[1], 0.],
+                                     [br[0], br[1], 0.],
+                                     [-br[0], -br[1], 0.],
+                                     [ur[0], ur[1], 0.]])
+
+            vert = torch.cat((vert, new_vert), dim=0)
+
         points, values = vert[:, 0:2], vert[:, 2]
 
         return points, values

@@ -103,6 +103,13 @@ def get_arg_parser():
         'If negative, set no seed. '
         f'(default: {default_values["seed"]})')
 
+    parser.add_argument(
+        '--add_lat_vert',
+        action='store_true',
+        help='If True, add the lattice extreme points to the dataset. '
+        'Only has effect for *face* datasets.'
+        f'(default: {default_values["add_lat_vert"]})')
+
     # Lattice
     parser.add_argument(
         '--lsize',
@@ -117,6 +124,13 @@ def get_arg_parser():
         type=ArgCheck.p_int,
         help='Number of admm iterations. '
         f'(default: {default_values["admm_iter"]})')
+
+    parser.add_argument(
+        '--sigma_rule',
+        choices=['constant', 'same'],
+        type=str,
+        help='Rule to set proximal step size in admm (see algorithm.py). '
+        f'(default: {default_values["sigma_rule"]})')
 
     parser.add_argument(
         '--simplex',
