@@ -5,3 +5,4 @@ __pycache__/
 *.log
 output/
 logo/
+bash_scripts/
