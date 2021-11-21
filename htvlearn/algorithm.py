@@ -22,7 +22,6 @@ class Algorithm():
                  model_name,
                  lmbda,
                  admm_iter=100000,
-                 sigma_rule='constant',
                  simplex=False,
                  verbose=False,
                  **kwargs):
@@ -37,8 +36,6 @@ class Algorithm():
                 regularization weight.
             admm_iter (int):
                 number of admm iterations to run.
-            sigma_rule (str):
-                rule to set proximal step size in admm.
             simplex (bool):
                 If True, perform simplex after admm.
             verbose (bool):
@@ -54,7 +51,6 @@ class Algorithm():
         self.model_name = model_name
         self.lmbda = lmbda
         self.admm_iter = admm_iter
-        self.sigma_rule = sigma_rule
         self.simplex = simplex
         self.verbose = verbose
 
@@ -167,16 +163,10 @@ class Algorithm():
 
         # Estimated operator norm, add 10 percent for some safety margin
         op_norm = 1.1 * odl.power_method_opnorm(stack_op, maxiter=1000)
-
         # set step size for g.proximal
-        if self.sigma_rule == 'constant':
-            sigma = 2.0
-        elif self.sigma_rule == 'same':
-            sigma = self.lmbda
-        else:
-            raise ValueError(f'sigma rule {self.sigma_rule} is not available.')
-
-        tau = sigma / op_norm**2  # Step size for f.proximal
+        sigma = self.lmbda  # sigma = 2.0 (constant)
+        # set step size for f.proximal
+        tau = sigma / op_norm**2
 
         if self.verbose:
             print('admm (tau, sigma): ({:.3f}, {:.4f})'.format(tau, sigma))

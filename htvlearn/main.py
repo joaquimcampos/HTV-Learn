@@ -126,13 +126,6 @@ def get_arg_parser():
         f'(default: {default_values["admm_iter"]})')
 
     parser.add_argument(
-        '--sigma_rule',
-        choices=['constant', 'same'],
-        type=str,
-        help='Rule to set proximal step size in admm (see algorithm.py). '
-        f'(default: {default_values["sigma_rule"]})')
-
-    parser.add_argument(
         '--simplex',
         action='store_true',
         help='Perform simplex after admm. '

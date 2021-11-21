@@ -26,7 +26,6 @@ default_values = {
     'C_init': 'zero',  # coefficient initialization
     # HTV minimization algorithm
     'admm_iter': 200000,
-    'sigma_rule': 'constant',
     'simplex': True,
     # RBF
     'eps': 5,  # kernel size
@@ -84,7 +83,6 @@ structure = {
         'lmbda': None,
         'model_name': None,
         'admm_iter': None,
-        'sigma_rule': None,
         'simplex': None,
         'verbose': None
     },
