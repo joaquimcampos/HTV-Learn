@@ -340,7 +340,7 @@ class Data():
 
                 self.delaunay['points'] = \
                     np.concatenate((self.delaunay['points'],
-                                    lat_points), dim=0)
+                                    lat_points), axis=0)
                 self.delaunay['values'] = \
                     np.concatenate((self.delaunay['values'],
                                     np.zeros(4)))
