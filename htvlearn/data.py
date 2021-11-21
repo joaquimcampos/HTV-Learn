@@ -222,8 +222,7 @@ class Data():
                     self.init_face(self.data_dir,
                                    cut=True
                                    if 'cut' in self.dataset_name
-                                   else False,
-                                   add_lat_vert=self.add_lat_vert)
+                                   else False)
 
         self.cpwl = Delaunay(points=self.delaunay['points'],
                              values=self.delaunay['values'])
@@ -328,6 +327,25 @@ class Data():
                 self.valid['input'] = x[(split_idx + 1)::]
                 self.valid['values'] = \
                     self.cpwl.evaluate(self.valid['input'])
+
+            if ('face' in self.dataset_name and
+                    self.add_lat_vert is True):
+                # add lattice corners
+                br = Lattice.bottom_right_std
+                ur = Lattice.upper_right_std
+                lat_points = torch.tensor([[-ur[0], -ur[1]],
+                                           [br[0], br[1]],
+                                           [-br[0], -br[1]],
+                                           [ur[0], ur[1]]])
+
+                self.delaunay['points'] = torch.cat((self.delaunay['points'],
+                                                     lat_points),
+                                                    dim=0)
+                self.delaunay['values'] = torch.cat((self.delaunay['values'],
+                                                     torch.zeros(4)))
+                # refresh self.cpwl
+                self.cpwl = Delaunay(points=self.delaunay['points'],
+                                     values=self.delaunay['values'])
 
     def generate_random_samples(self, num_samples):
         """
@@ -600,7 +618,7 @@ class Data():
         return cleaned_vert
 
     @classmethod
-    def init_face(cls, data_dir, cut=False, add_lat_vert=False):
+    def init_face(cls, data_dir, cut=False):
         """
         Initialize the face dataset.
 
@@ -608,8 +626,6 @@ class Data():
             cut (bool):
                 if True, use only a smaller section of the face.
                 Otherwise, use full face with zero boundaries.
-            add_lat_vert (bool):
-                if True, add lattice extreme points to dataset.
 
         Returns:
             points (torch.tensor): size (M, 2).
@@ -685,17 +701,6 @@ class Data():
             vert = np.concatenate((vert, new_vertices), axis=0)
 
         vert = cls.fit_in_lattice(vert)
-
-        if add_lat_vert is True:
-            br = Lattice.bottom_right_std
-            ur = Lattice.upper_right_std
-            # add x_v6, x_v7, and lattice corners
-            new_vert = torch.tensor([[-ur[0], -ur[1], 0.],
-                                     [br[0], br[1], 0.],
-                                     [-br[0], -br[1], 0.],
-                                     [ur[0], ur[1], 0.]])
-
-            vert = torch.cat((vert, new_vert), dim=0)
 
         points, values = vert[:, 0:2], vert[:, 2]
 
