@@ -231,7 +231,7 @@ class Data():
             if not self.cpwl.has_rectangular_range:
                 if self.dataset_name.endswith('planes'):
                     h = (self.cpwl.tri.points[:, 0].max() -
-                         self.cpwl.tri.points[:, 0].min()) / 400
+                         self.cpwl.tri.points[:, 0].min()) / 500
                     self.test['input'] = \
                         Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
                              x1_max=self.cpwl.tri.points[:, 0].max(),
@@ -248,12 +248,13 @@ class Data():
                     # generate uniformly distributed samples in cpwl convex set
                     # the final number of test samples will be smaller because
                     # samples outside lattice are discarded
-                    nb_samples = 5000
+                    nb_samples = 250000  # 500*500
                     self.test['input'] = \
                         self.generate_random_samples(nb_samples)
             else:
                 # test set is sampled on a grid inside the convex hull of cpwl
-                self.test['input'] = self.cpwl.get_grid(h=0.01,
+                # this gives a test grid 500 x 500 samples
+                self.test['input'] = self.cpwl.get_grid(h=0.002,
                                                         to_numpy=False,
                                                         to_float32=True).x
 
