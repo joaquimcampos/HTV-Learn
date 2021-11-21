@@ -86,6 +86,14 @@ def plot_model(args):
         'values': output_test.cpu().numpy()
     }
 
+    # # TODO: remove this temporary fix
+    # if (params['data']['add_lat_vert'] is True
+    #         and 'face' in params['data']['dataset_name']):
+    #     # add lattice points
+    #     ret_dict['points'], ret_dict['values'] = \
+    #         Data.add_lattice_vertices(ret_dict['points'],
+    #                                   ret_dict['values'])
+
     # construct grid from predictions
     out_cpwl = Delaunay(**ret_dict)
 
