@@ -201,8 +201,9 @@ class Data():
 
     def init_data(self):
         """Initialize cpwl dataset, and train/test/valid sets"""
+        loaded_delaunay = True
         if not bool(self.delaunay):
-
+            loaded_delaunay = False
             if self.dataset_name.startswith('pyramid'):
                 self.delaunay['points'], self.delaunay['values'] = \
                     self.init_pyramid()
@@ -227,7 +228,9 @@ class Data():
         self.cpwl = Delaunay(points=self.delaunay['points'],
                              values=self.delaunay['values'])
 
+        loaded_test = True
         if not bool(self.test):
+            loaded_test = False
             if not self.cpwl.has_rectangular_range:
                 if self.dataset_name.endswith('planes'):
                     h = (self.cpwl.tri.points[:, 0].max() -
@@ -329,25 +332,54 @@ class Data():
                 self.valid['values'] = \
                     self.cpwl.evaluate(self.valid['input'])
 
-            if ('face' in self.dataset_name and
-                    self.add_lat_vert is True):
-                # add lattice corners
-                br = Lattice.bottom_right_std
-                ur = Lattice.upper_right_std
-                lat_points = np.array([[-ur[0], -ur[1]],
-                                       [br[0], br[1]],
-                                       [-br[0], -br[1]],
-                                       [ur[0], ur[1]]])
-
-                self.delaunay['points'] = \
-                    np.concatenate((self.delaunay['points'],
-                                    lat_points), axis=0)
-                self.delaunay['values'] = \
-                    np.concatenate((self.delaunay['values'],
-                                    np.zeros(4)))
+        if ('face' in self.dataset_name and
+                self.add_lat_vert is True):
+            if loaded_delaunay is False:
+                # add lattice vertices but do not save them in self.delaunay
+                # so as not to influence test generation.
+                points, values = \
+                    self.add_lattice_vertices(self.delaunay['points'],
+                                              self.delaunay['values'])
                 # refresh self.cpwl
-                self.cpwl = Delaunay(points=self.delaunay['points'],
-                                     values=self.delaunay['values'])
+                self.cpwl = Delaunay(points=points, values=values)
+            if loaded_test is False:
+                # add lattice vertices to test
+                self.test['input'], self.test['values'] = \
+                    self.add_lattice_vertices(self.test['points'],
+                                              self.test['values'])
+
+    @staticmethod
+    def add_lattice_vertices(points, values):
+        """Add lattice vertices.
+
+        Args:
+            points (torch.Tensor or np.ndarray): size (m, 2)
+            values (torch.Tensor or np.ndarray): size (m,)
+        """
+        nparray = False
+        if isinstance(points, np.ndarray):
+            nparray = True
+            # convert to torch
+            points = torch.from_numpy(points)
+            values = torch.from_numpy(values)
+
+        # add lattice corners
+        br = Lattice.bottom_right_std
+        ur = Lattice.upper_right_std
+        lat_points = torch.array([[-ur[0], -ur[1]],
+                                  [br[0], br[1]],
+                                  [-br[0], -br[1]],
+                                  [ur[0], ur[1]]])
+
+        points = torch.concatenate((points, lat_points), dim=0)
+        values = torch.concatenate((values, torch.zeros(4)))
+
+        if nparray is True:
+            # convert to numpy
+            points = points.numpy()
+            values = values.numpy()
+
+        return points, values
 
     def generate_random_samples(self, num_samples):
         """
