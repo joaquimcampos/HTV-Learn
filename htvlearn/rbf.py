@@ -79,7 +79,7 @@ class RBF():
                                          device=self.gram_mat.device)
 
         # Solve AX = B
-        X, _ = torch.lstsq(B, A)
+        X = torch.linalg.lstsq(A, B).solution
         self.coeffs = X.squeeze(-1).float()
 
         assert self.coeffs.size() == self.values.size()
