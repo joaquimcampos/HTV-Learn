@@ -333,16 +333,17 @@ class Data():
                 # add lattice corners
                 br = Lattice.bottom_right_std
                 ur = Lattice.upper_right_std
-                lat_points = torch.tensor([[-ur[0], -ur[1]],
-                                           [br[0], br[1]],
-                                           [-br[0], -br[1]],
-                                           [ur[0], ur[1]]])
+                lat_points = np.array([[-ur[0], -ur[1]],
+                                       [br[0], br[1]],
+                                       [-br[0], -br[1]],
+                                       [ur[0], ur[1]]])
 
-                self.delaunay['points'] = torch.cat((self.delaunay['points'],
-                                                     lat_points),
-                                                    dim=0)
-                self.delaunay['values'] = torch.cat((self.delaunay['values'],
-                                                     torch.zeros(4)))
+                self.delaunay['points'] = \
+                    np.concatenate((self.delaunay['points'],
+                                    lat_points), dim=0)
+                self.delaunay['values'] = \
+                    np.concatenate((self.delaunay['values'],
+                                    np.zeros(4)))
                 # refresh self.cpwl
                 self.cpwl = Delaunay(points=self.delaunay['points'],
                                      values=self.delaunay['values'])
