@@ -240,8 +240,12 @@ class BasePlot():
                        zaxis=copy.deepcopy(ax_dict),
                        camera=dict(up=dict(x=0, y=0, z=1),
                                    center=dict(x=0, y=0, z=0))),
-            font=dict(size=30),
+            font=dict(size=20),
         )
+
+        fig_dict['scene']['xaxis']['title'] = 'x'
+        fig_dict['scene']['yaxis']['title'] = 'y'
+        fig_dict['scene']['zaxis']['title'] = 'z'
 
         if view == 'up':
             fig_dict['scene']['zaxis']['visible'] = False
