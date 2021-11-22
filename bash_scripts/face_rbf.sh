@@ -6,7 +6,7 @@ echo -n "Enter cpu-list (x,y): "
 read cpu
 
 REPO=/home/jcampos/repos/HTV-Learn
-seed=7
+seed=8
 
 for lmbda in 1e-4 1e-3 1e-2
 do

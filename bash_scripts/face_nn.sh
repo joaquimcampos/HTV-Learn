@@ -13,7 +13,7 @@ m2=1900
 # epochs
 ep=2000
 # seed
-seed=7
+seed=8
 
 for COMB in relu-50 leakyrelu-50 relu-256 leakyrelu-256;
 do
