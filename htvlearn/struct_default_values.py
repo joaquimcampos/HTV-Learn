@@ -7,7 +7,7 @@ parameters dictionary.
 # on quad_top_planes dataset
 default_values = {
     'method': 'htv',
-    'lmbda': 3e-3,  # 1e-1 for RBF
+    'lmbda': 2e-3,  # 8e-2 for RBF
     'no_htv': False,
     # logs-related
     'log_dir': 'output',
@@ -18,7 +18,7 @@ default_values = {
     'data_dir': './data',
     'test_as_valid': False,
     'noise_ratio': 0.05,
-    'seed': 8,
+    'seed': 14,
     'add_lat_vert': False,
     'valid_fraction': 0.2,
     # Lattice
@@ -28,7 +28,7 @@ default_values = {
     'admm_iter': 200000,
     'simplex': True,
     # RBF
-    'eps': 5,  # kernel size
+    'eps': 7,  # kernel size
     # Neural Net
     'net_model': 'relufcnet2d',
     'htv_mode': 'finite_diff_differential',
@@ -36,8 +36,8 @@ default_values = {
     'num_hidden_layers': 4,
     'num_hidden_neurons': 40,
     'weight_decay': 1e-6,
-    'milestones': [175, 225],
-    'num_epochs': 250,
+    'milestones': [375, 450],
+    'num_epochs': 500,
     'log_step': None,
     'valid_log_step': None,
     'ckpt_filename': None,
