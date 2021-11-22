@@ -345,7 +345,7 @@ class Data():
             if loaded_test is False:
                 # add lattice vertices to test
                 self.test['input'], self.test['values'] = \
-                    self.add_lattice_vertices(self.test['points'],
+                    self.add_lattice_vertices(self.test['input'],
                                               self.test['values'])
 
     @staticmethod
@@ -366,13 +366,13 @@ class Data():
         # add lattice corners
         br = Lattice.bottom_right_std
         ur = Lattice.upper_right_std
-        lat_points = torch.array([[-ur[0], -ur[1]],
-                                  [br[0], br[1]],
-                                  [-br[0], -br[1]],
-                                  [ur[0], ur[1]]])
+        lat_points = torch.tensor([[-ur[0], -ur[1]],
+                                   [br[0], br[1]],
+                                   [-br[0], -br[1]],
+                                   [ur[0], ur[1]]])
 
-        points = torch.concatenate((points, lat_points), dim=0)
-        values = torch.concatenate((values, torch.zeros(4)))
+        points = torch.cat((points, lat_points), dim=0)
+        values = torch.cat((values, torch.zeros(4)))
 
         if nparray is True:
             # convert to numpy
