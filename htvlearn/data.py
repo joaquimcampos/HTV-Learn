@@ -201,9 +201,7 @@ class Data():
 
     def init_data(self):
         """Initialize cpwl dataset, and train/test/valid sets"""
-        loaded_delaunay = True
         if not bool(self.delaunay):
-            loaded_delaunay = False
             if self.dataset_name.startswith('pyramid'):
                 self.delaunay['points'], self.delaunay['values'] = \
                     self.init_pyramid()
@@ -334,14 +332,14 @@ class Data():
 
         if ('face' in self.dataset_name and
                 self.add_lat_vert is True):
-            if loaded_delaunay is False:
-                # add lattice vertices but do not save them in self.delaunay
-                # so as not to influence test generation.
-                points, values = \
-                    self.add_lattice_vertices(self.delaunay['points'],
-                                              self.delaunay['values'])
-                # refresh self.cpwl
-                self.cpwl = Delaunay(points=points, values=values)
+            # add lattice vertices but do not save them in self.delaunay
+            # so as not to influence test generation.
+            points, values = \
+                self.add_lattice_vertices(self.delaunay['points'],
+                                          self.delaunay['values'])
+            # refresh self.cpwl
+            self.cpwl = Delaunay(points=points, values=values)
+
             if loaded_test is False:
                 # add lattice vertices to test
                 self.test['input'], self.test['values'] = \
