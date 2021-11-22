@@ -15,7 +15,7 @@ m2=450
 # epochs
 ep=500
 
-for COMB in relu-40 leakyrelu-40 relu-256;
+for COMB in relu-40 leakyrelu-40 relu-256 leakyrelu-256;
 do
     activ=${COMB%-*}
     nhidden=${COMB#*-}

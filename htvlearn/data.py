@@ -346,15 +346,16 @@ class Data():
                 # add lattice vertices to test
                 self.test['input'], self.test['values'] = \
                     self.add_lattice_vertices(self.test['input'],
-                                              self.test['values'])
+                                              self.test['values'], eps=1e-4)
 
     @staticmethod
-    def add_lattice_vertices(points, values):
-        """Add lattice vertices.
+    def add_lattice_vertices(points, values, eps=0.):
+        """Add lattice vertices (up to eps distance away)
 
         Args:
             points (torch.Tensor or np.ndarray): size (m, 2)
             values (torch.Tensor or np.ndarray): size (m,)
+            eps (float): buffer distance from boundaries of lattice.
         """
         nparray = False
         if isinstance(points, np.ndarray):
@@ -366,10 +367,12 @@ class Data():
         # add lattice corners
         br = Lattice.bottom_right_std
         ur = Lattice.upper_right_std
-        lat_points = torch.tensor([[-ur[0], -ur[1]],
-                                   [br[0], br[1]],
-                                   [-br[0], -br[1]],
-                                   [ur[0], ur[1]]])
+        a, b = eps * np.sqrt(3)/2., eps * .5
+        lat_points = \
+            torch.tensor([[-ur[0] + a, -ur[1] + b],
+                          [br[0] - b, br[1] + a],
+                          [-br[0] + b, -br[1] - a],
+                          [ur[0] - a, ur[1] - b]])
 
         points = torch.cat((points, lat_points), dim=0)
         values = torch.cat((values, torch.zeros(4)))
