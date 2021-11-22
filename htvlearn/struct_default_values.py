@@ -17,8 +17,8 @@ default_values = {
     'num_train': 250,
     'data_dir': './data',
     'test_as_valid': False,
-    'noise_ratio': 0.061,
-    'seed': -1,
+    'noise_ratio': 0.05,
+    'seed': 8,
     'add_lat_vert': False,
     'valid_fraction': 0.2,
     # Lattice
