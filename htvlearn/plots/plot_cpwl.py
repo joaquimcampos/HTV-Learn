@@ -49,8 +49,6 @@ class Plot(BasePlot):
                             specs=specs,
                             shared_xaxes=True,
                             shared_yaxes=True)
-        if observations:
-            fig.add_trace(self.get_observations_plot(**kwargs), row=1, col=1)
 
         for i, delaunay in enumerate(delaunay_obj_list):
             if not isinstance(delaunay, Delaunay):
@@ -81,7 +79,7 @@ class Plot(BasePlot):
                 fig.add_trace(trisurf_trace, row=1, col=i + 1)
 
             if opaque is False:
-                fig['data'][-1].update(opacity=0.85)
+                fig['data'][-1].update(opacity=0.95)
 
             if constrast is True:
                 fig.update_traces(lighting=dict(ambient=0.1,
@@ -89,6 +87,9 @@ class Plot(BasePlot):
                                                 specular=0.1),
                                   lightposition=dict(x=0, y=0, z=4),
                                   selector=dict(type='mesh3d'))
+
+        if observations:
+            fig.add_trace(self.get_observations_plot(**kwargs), row=1, col=1)
 
         self.plot_fig(fig,
                       filename=filename,
