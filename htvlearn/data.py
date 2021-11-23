@@ -178,11 +178,9 @@ class Data():
             # load data from self.data_from_ckpt
             assert 'train' in self.data_from_ckpt
             assert 'valid' in self.data_from_ckpt
-            assert 'test' in self.data_from_ckpt
 
             self.train = self.data_from_ckpt['train']
             self.valid = self.data_from_ckpt['valid']
-            self.test = self.data_from_ckpt['test']
 
             if 'delaunay' in self.data_from_ckpt:
                 assert 'points' in self.data_from_ckpt['delaunay']
@@ -222,45 +220,42 @@ class Data():
         self.cpwl = Delaunay(points=self.delaunay['points'],
                              values=self.delaunay['values'])
 
-        loaded_test = True
-        if not bool(self.test):
-            loaded_test = False
-            if not self.cpwl.has_rectangular_range:
-                if self.dataset_name.endswith('planes'):
-                    h = (self.cpwl.tri.points[:, 0].max() -
-                         self.cpwl.tri.points[:, 0].min()) / 400
-                    self.test['input'] = \
-                        Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
-                             x1_max=self.cpwl.tri.points[:, 0].max(),
-                             x2_min=self.cpwl.tri.points[:, 1].min(),
-                             x2_max=self.cpwl.tri.points[:, 1].max(),
-                             h=h,
-                             to_numpy=False,
-                             to_float32=True).x
+        if not self.cpwl.has_rectangular_range:
+            if self.dataset_name.endswith('planes'):
+                h = (self.cpwl.tri.points[:, 0].max() -
+                     self.cpwl.tri.points[:, 0].min()) / 400
+                self.test['input'] = \
+                    Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
+                         x1_max=self.cpwl.tri.points[:, 0].max(),
+                         x2_min=self.cpwl.tri.points[:, 1].min(),
+                         x2_max=self.cpwl.tri.points[:, 1].max(),
+                         h=h,
+                         to_numpy=False,
+                         to_float32=True).x
 
-                    # discard samples outside convex set
-                    idx = self.cpwl.tri.find_simplex(self.test['input'])
-                    self.test['input'] = self.test['input'][idx >= 0]
-                else:
-                    # generate uniformly distributed samples in cpwl convex set
-                    # the final number of test samples will be smaller because
-                    # samples outside lattice are discarded
-                    nb_samples = 160000  # 400*400
-                    self.test['input'] = \
-                        self.generate_random_samples(nb_samples)
+                # discard samples outside convex set
+                idx = self.cpwl.tri.find_simplex(self.test['input'])
+                self.test['input'] = self.test['input'][idx >= 0]
             else:
-                # test set is sampled on a grid inside the convex hull of cpwl
-                # this gives a test grid 500 x 500 samples
-                self.test['input'] = self.cpwl.get_grid(h=0.0025,
-                                                        to_numpy=False,
-                                                        to_float32=True).x
+                # generate uniformly distributed samples in cpwl convex set
+                # the final number of test samples will be smaller because
+                # samples outside lattice are discarded
+                nb_samples = 160000  # 400*400
+                self.test['input'] = \
+                    self.generate_random_samples(nb_samples)
+        else:
+            # test set is sampled on a grid inside the convex hull of cpwl
+            # this gives a test grid 500 x 500 samples
+            self.test['input'] = self.cpwl.get_grid(h=0.0025,
+                                                    to_numpy=False,
+                                                    to_float32=True).x
 
-            self.test['values'] = self.cpwl.evaluate(self.test['input'])
-            print(f'\nnb. of test data points : {self.test["input"].size(0)}')
+        self.test['values'] = self.cpwl.evaluate(self.test['input'])
+        print(f'\nnb. of test data points : {self.test["input"].size(0)}')
 
-            if (not bool(self.valid)) and (self.test_as_valid is True):
-                self.valid['input'] = self.test['input'].clone()
-                self.valid['values'] = self.test['values'].clone()
+        if (not bool(self.valid)) and (self.test_as_valid is True):
+            self.valid['input'] = self.test['input'].clone()
+            self.valid['values'] = self.test['values'].clone()
 
         if not bool(self.train):
 

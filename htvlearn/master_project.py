@@ -154,7 +154,6 @@ class MasterProject(ABC):
             'data': {
                 'train': self.data.train,
                 'valid': self.data.valid,
-                'test': self.data.test,
                 'delaunay': self.data.delaunay
             },
         }
