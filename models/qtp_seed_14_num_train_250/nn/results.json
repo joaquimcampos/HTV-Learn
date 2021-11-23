@@ -1,0 +1,8 @@
+{
+    "relu_nhidden_256_milestones_375_450_epochs_500": {
+        "test_mse": 3.69e-05,
+        "htv": 10.3,
+        "train_mse": 4.07e-05,
+        "valid_mse": 7.38e-05
+    }
+}

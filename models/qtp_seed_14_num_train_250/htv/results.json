@@ -1,0 +1,34 @@
+{
+    "lmbda_2e-3": {
+        "test_mse": 3.59e-05,
+        "valid_mse": 7.65e-05,
+        "train_mse": 3.34e-05,
+        "percentage_nonzero": 27.5,
+        "simplex_status": "optimal",
+        "htv": 7.17
+    },
+    "lmbda_4e-3": {
+        "test_mse": 3.83e-05,
+        "valid_mse": 0.000104,
+        "train_mse": 5.47e-05,
+        "percentage_nonzero": 19.7,
+        "simplex_status": "optimal",
+        "htv": 5.53
+    },
+    "lmbda_6e-3": {
+        "test_mse": 4.39e-05,
+        "valid_mse": 0.000117,
+        "train_mse": 6.77e-05,
+        "percentage_nonzero": 16.1,
+        "simplex_status": "optimal",
+        "htv": 5.0
+    },
+    "lmbda_10": {
+        "test_mse": 0.00313,
+        "valid_mse": 0.0028,
+        "train_mse": 0.00323,
+        "percentage_nonzero": 0.0,
+        "simplex_status": "optimal",
+        "htv": 4.5e-05
+    }
+}
