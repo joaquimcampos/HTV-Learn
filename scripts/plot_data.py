@@ -26,9 +26,14 @@ def plot_data(args):
 
     plot = Plot(data_obj, **plot_params)
     plot.plot_delaunay(data_obj.cpwl,
-                       observations=True,
+                       observations=False,
                        color='normal')
 
+    plot.plot_delaunay(data_obj.cpwl,
+                       observations=True,
+                       opaque=False,
+                       marker_size=0.65,
+                       color='normal')
 
 if __name__ == "__main__":
 
@@ -45,7 +50,7 @@ if __name__ == "__main__":
         '--dataset_name',
         choices=dataset_choices,
         type=str,
-        default='cut_face_gaps',
+        default='face',
         help=' ')
 
     parser.add_argument(
@@ -67,13 +72,6 @@ if __name__ == "__main__":
         metavar='[INT]',
         type=int,
         default=-1,
-        help=' ')
-
-    parser.add_argument(
-        '--lsize',
-        metavar='[INT,>0]',
-        type=ArgCheck.p_int,
-        default=64,
         help=' ')
 
     args = parser.parse_args()
