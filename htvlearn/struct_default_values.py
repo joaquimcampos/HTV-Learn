@@ -19,7 +19,6 @@ default_values = {
     'test_as_valid': False,
     'noise_ratio': 0.05,
     'seed': 14,
-    'add_lat_vert': False,
     'valid_fraction': 0.2,
     # Lattice
     'lsize': 64,
@@ -70,7 +69,6 @@ structure = {
         'test_as_valid': None,
         'noise_ratio': None,
         'seed': None,
-        'add_lat_vert': None,
         'valid_fraction': None,
         'verbose': None
     },

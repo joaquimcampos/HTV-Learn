@@ -103,13 +103,6 @@ def get_arg_parser():
         'If negative, set no seed. '
         f'(default: {default_values["seed"]})')
 
-    parser.add_argument(
-        '--add_lat_vert',
-        action='store_true',
-        help='If True, add the lattice extreme points to the dataset. '
-        'Only has effect for *face* datasets.'
-        f'(default: {default_values["add_lat_vert"]})')
-
     # Lattice
     parser.add_argument(
         '--lsize',

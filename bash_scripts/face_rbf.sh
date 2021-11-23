@@ -10,11 +10,11 @@ seed=8
 
 for lmbda in 1e-4 1e-3 1e-2
 do
-    for eps in 50 
+    for eps in 50
     do
 	taskset --cpu-list "$cpu" python3 "$REPO"/htvlearn/main.py --method rbf --lmbda "$lmbda" \
 	--eps "$eps" --log_dir "$REPO"/output/face_seed_"$seed"_num_train_"$nb"/rbf/ \
 	--model_name lmbda_"$lmbda"_eps_"$eps" --dataset_name face --num_train "$nb" \
-	--noise_ratio 0.0 --seed "$seed" --add_lat_vert --lsize 194 -v
+	--noise_ratio 0.0 --seed "$seed" --lsize 194 -v
     done
 done

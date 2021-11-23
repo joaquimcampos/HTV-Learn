@@ -23,7 +23,7 @@ do
     --log_dir "$REPO"/output/face_seed_"$seed"_num_train_"$nb"/nn/ \
     --model_name "$activ"_nhidden_"$nhidden"_milestones_"$m1"_"$m2"_epochs_"$ep" \
     --dataset_name face --num_train "$nb" --noise_ratio 0.0 --seed "$seed" \
-    --add_lat_vert --lsize 194 --net_model "$activ"fcnet2d --milestones "$m1" "$m2" \
+    --lsize 194 --net_model "$activ"fcnet2d --milestones "$m1" "$m2" \
     --num_epochs "$ep" --weight_decay 1e-6 --batch_size 100 \
     --num_hidden_layers 5 --num_hidden_neurons "$nhidden" --device cpu -v
 done

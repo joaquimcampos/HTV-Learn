@@ -120,7 +120,6 @@ class Data():
                  test_as_valid=False,
                  noise_ratio=0.,
                  seed=-1,
-                 add_lat_vert=False,
                  verbose=False,
                  **kwargs):
         """
@@ -144,8 +143,6 @@ class Data():
                 the data range.
             seed (int):
                 seed for random generation. If negative, no seed is set.
-            add_lat_vert (bool):
-                if True, add lattice extreme points (face dataset).
             verbose (bool):
                 print more info.
         """
@@ -163,7 +160,6 @@ class Data():
         self.test_as_valid = test_as_valid
         self.noise_ratio = noise_ratio
         self.seed = seed
-        self.add_lat_vert = add_lat_vert
         self.verbose = verbose
         # if not overwritten, computed in add_noise_to_values()
         # from self.noise_ratio and dataset height range
@@ -329,22 +325,6 @@ class Data():
                 self.valid['input'] = x[(split_idx + 1)::]
                 self.valid['values'] = \
                     self.cpwl.evaluate(self.valid['input'])
-
-        if ('face' in self.dataset_name and
-                self.add_lat_vert is True):
-            # add lattice vertices but do not save them in self.delaunay
-            # so as not to influence test generation.
-            points, values = \
-                self.add_lattice_vertices(self.delaunay['points'],
-                                          self.delaunay['values'])
-            # refresh self.cpwl
-            self.cpwl = Delaunay(points=points, values=values)
-
-            if loaded_test is False:
-                # add lattice vertices to test
-                self.test['input'], self.test['values'] = \
-                    self.add_lattice_vertices(self.test['input'],
-                                              self.test['values'], eps=1e-4)
 
     @staticmethod
     def add_lattice_vertices(points, values, eps=0.):

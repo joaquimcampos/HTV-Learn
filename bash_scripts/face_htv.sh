@@ -13,5 +13,5 @@ do
     taskset --cpu-list "$cpu" python3 "$REPO"/htvlearn/main.py --method htv --lmbda "$lmbda" \
     --log_dir "$REPO"/output/face_seed_"$seed"_num_train_"$nb"/htv/ \
     --model_name lmbda_"$lmbda" --dataset_name face --num_train "$nb" \
-    --noise_ratio 0 --seed "$seed" --add_lat_vert --lsize 194 --admm_iter 200000 -v
+    --noise_ratio 0 --seed "$seed" --lsize 194 --admm_iter 200000 -v
 done
