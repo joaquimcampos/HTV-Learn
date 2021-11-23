@@ -232,7 +232,7 @@ class Data():
             if not self.cpwl.has_rectangular_range:
                 if self.dataset_name.endswith('planes'):
                     h = (self.cpwl.tri.points[:, 0].max() -
-                         self.cpwl.tri.points[:, 0].min()) / 500
+                         self.cpwl.tri.points[:, 0].min()) / 400
                     self.test['input'] = \
                         Grid(x1_min=self.cpwl.tri.points[:, 0].min(),
                              x1_max=self.cpwl.tri.points[:, 0].max(),
@@ -249,13 +249,13 @@ class Data():
                     # generate uniformly distributed samples in cpwl convex set
                     # the final number of test samples will be smaller because
                     # samples outside lattice are discarded
-                    nb_samples = 250000  # 500*500
+                    nb_samples = 160000  # 400*400
                     self.test['input'] = \
                         self.generate_random_samples(nb_samples)
             else:
                 # test set is sampled on a grid inside the convex hull of cpwl
                 # this gives a test grid 500 x 500 samples
-                self.test['input'] = self.cpwl.get_grid(h=0.002,
+                self.test['input'] = self.cpwl.get_grid(h=0.0025,
                                                         to_numpy=False,
                                                         to_float32=True).x
 
@@ -365,7 +365,7 @@ class Data():
         # add lattice corners
         br = Lattice.bottom_right_std
         ur = Lattice.upper_right_std
-        a, b = eps * np.sqrt(3)/2., eps * .5
+        a, b = eps * np.sqrt(3) / 2., eps * .5
         lat_points = \
             torch.tensor([[-ur[0] + a, -ur[1] + b],
                           [br[0] - b, br[1] + a],
