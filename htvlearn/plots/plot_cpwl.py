@@ -21,6 +21,7 @@ class Plot(BasePlot):
                       observations=False,
                       color='normal',
                       opaque=True,
+                      constrast=False,
                       filename='trisurf_delaunay',
                       **kwargs):
         """
@@ -37,6 +38,8 @@ class Plot(BasePlot):
             opaque (bool):
                 If True, ground truth is made opaque
                 (if True, might make some observations non-visible).
+            constrast (bool):
+                Enhance figure constrast.
             filename (str):
                 Figure filename.
         """
@@ -79,6 +82,13 @@ class Plot(BasePlot):
 
             if opaque is False:
                 fig['data'][-1].update(opacity=0.85)
+
+            if constrast is True:
+                fig.update_traces(lighting=dict(ambient=0.1,
+                                                diffuse=1,
+                                                specular=0.1),
+                                  lightposition=dict(x=0, y=0, z=4),
+                                  selector=dict(type='mesh3d'))
 
         self.plot_fig(fig,
                       filename=filename,

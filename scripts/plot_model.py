@@ -86,21 +86,34 @@ def plot_model(args):
         'values': output_test.cpu().numpy()
     }
 
-    # # TODO: remove this temporary fix
-    # if (params['data']['add_lat_vert'] is True
-    #         and 'face' in params['data']['dataset_name']):
-    #     # add lattice points
-    #     ret_dict['points'], ret_dict['values'] = \
-    #         Data.add_lattice_vertices(ret_dict['points'],
-    #                                   ret_dict['values'])
+    # x_lat = lattice_obj.lattice_grid
+    # points = lattice_obj.lattice_to_standard(x_lat.float())
+    # # rel = relative to bottom left corner
+    # x_lat_rel = x_lat.sub(lattice_obj.lmin)
+    # values = lattice_obj.C_mat[x_lat_rel[:, 0], x_lat_rel[:, 1]]
+    #
+    # ret_dict = {
+    #     'points': points.cpu().numpy(),
+    #     'values': values.cpu().numpy()
+    # }
 
     # construct grid from predictions
     out_cpwl = Delaunay(**ret_dict)
 
     plot = Plot(data_obj, **params['plots'])
-    plot.plot_delaunay(out_cpwl, observations=False, color='normal')
-    # plot.plot_delaunay(data_obj.cpwl, out_cpwl,
-    #                    observations=False, color='normal')
+    plot.plot_delaunay(out_cpwl,
+                       observations=False,
+                       color='normal',
+                       constrast=(True
+                                  if 'face' in params['data']['dataset_name']
+                                  else False))
+    # plot.plot_delaunay(data_obj.cpwl,
+    #                    out_cpwl,
+    #                    observations=False,
+    #                    color='normal',
+    #                    constrast=(True
+    #                               if 'face' in params['data']['dataset_name']
+    #                               else False))
 
     print('\nTrain mse : {:.2E}'.format(train_mse))
     print('Test mse  : {:.2E}'.format(test_mse))
