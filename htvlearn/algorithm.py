@@ -164,7 +164,7 @@ class Algorithm():
         # Estimated operator norm, add 10 percent for some safety margin
         op_norm = 1.1 * odl.power_method_opnorm(stack_op, maxiter=1000)
         # set step size for g.proximal
-        sigma = self.lmbda  # sigma = 2.0 (constant)
+        sigma = self.lmbda if self.lmbda > 0 else 2.0  # sigma = 2.0 (constant)
         # set step size for f.proximal
         tau = sigma / op_norm**2
 
