@@ -5,13 +5,11 @@
 
 *HTV-Learn* is a framework that uses the Hessian-Schatten Total-Variation semi-norm as a regularizer in supervised learning as well as a measure of model complexity.
 
-The aim of this repository is to:
+The aim of this repository is to facilitate the reproduction of the results reported in the research papers:
 
-* Facilitate the reproduction of the results reported in the research papers:
+* "Learning of Continuous and Piecewise-Linear Functions with Hessian Total-Variation Regularization" (submitted);
 
-  * Learning of Continuous and Piecewise-Linear Functions with Hessian Total-Variation Regularization (submitted);
-
-  * Measuring Complexity of Learning Schemes Using Hessian-Schatten Total-Variation (submitted)
+* "Measuring Complexity of Learning Schemes Using Hessian-Schatten Total-Variation" (submitted).
 
 .. contents:: **Table of Contents**
     :depth: 2
@@ -48,12 +46,12 @@ Then, we install the requirements via the command:
   >> pip install --upgrade -r requirements.txt
 
 .. role:: bash(code)
-:language: bash
+   :language: bash
 
 Reproducing results
 ===================
 
-The models shown in the research paper [Campos2020]_ are saved under `models/ <https://github.com/joaquimcampos/HTV-Learn/tree/master/models>`_.
+The models shown in the [Campos2020]_ are saved under the `models/ <https://github.com/joaquimcampos/HTV-Learn/tree/master/models>`_ folder.
 We can plot a model and its associated dataset via the command:
 
 .. code-block:: bash
