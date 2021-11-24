@@ -24,7 +24,7 @@ def run_pyramid_htv(args):
         'dataset_name': 'pyramid',
         'data_dir': './data',
         'noise_ratio': 0.,
-        'lsize': 40,
+        'lsize': 30,
         'admm_iter': 40000,
         'simplex': True
     }

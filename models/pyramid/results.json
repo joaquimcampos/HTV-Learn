@@ -1,9 +1,9 @@
 {
     "htv": {
-        "test_mse": 0.000424,
-        "valid_mse": 0.000424,
+        "test_mse": 5.59e-06,
+        "valid_mse": 5.59e-06,
         "train_mse": 0.0,
-        "percentage_nonzero": 2.03,
+        "percentage_nonzero": 2.73,
         "simplex_status": "optimal",
         "htv": 2.77
     }
