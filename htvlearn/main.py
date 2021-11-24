@@ -9,7 +9,6 @@ from htvlearn.htv_utils import ArgCheck, assign_tree_structure
 from htvlearn.struct_default_values import structure, default_values
 
 
-# TODO: Fix the Acknowledgements (new Grant)
 def get_arg_parser():
     """
     Parse command-line arguments.
