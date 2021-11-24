@@ -27,13 +27,18 @@ def plot_data(args):
     plot = Plot(data_obj, **plot_params)
     plot.plot_delaunay(data_obj.cpwl,
                        observations=False,
-                       color='normal')
+                       color='normal',
+                       filename='GT_no_data')
 
     plot.plot_delaunay(data_obj.cpwl,
                        observations=True,
                        opaque=False,
-                       marker_size=0.65,
-                       color='normal')
+                       marker_size=(0.65
+                                    if 'face' in args.dataset_name
+                                    else 2),
+                       color='normal',
+                       filename='GT_data')
+
 
 if __name__ == "__main__":
 

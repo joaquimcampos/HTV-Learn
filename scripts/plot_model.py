@@ -77,25 +77,25 @@ def plot_model(args):
     if not args.no_gt:
         plot = Plot(data_obj, **params['plots'])
         plot.plot_delaunay(data_obj.cpwl,
+                           observations=False,
+                           color='normal',
+                           filename='GT_no_data')
+
+        plot.plot_delaunay(data_obj.cpwl,
                            observations=True,
-                           color='normal')
-        # plot.plot_delaunay([], observations=True, top=False, color='normal')
+                           opaque=False,
+                           marker_size=(
+                               0.65
+                               if 'face' in params['data']['dataset_name']
+                               else 2
+                           ),
+                           color='normal',
+                           filename='GT_data')
 
     ret_dict = {
         'points': data_obj.test['input'].cpu().numpy(),
         'values': output_test.cpu().numpy()
     }
-
-    # x_lat = lattice_obj.lattice_grid
-    # points = lattice_obj.lattice_to_standard(x_lat.float())
-    # # rel = relative to bottom left corner
-    # x_lat_rel = x_lat.sub(lattice_obj.lmin)
-    # values = lattice_obj.C_mat[x_lat_rel[:, 0], x_lat_rel[:, 1]]
-    #
-    # ret_dict = {
-    #     'points': points.cpu().numpy(),
-    #     'values': values.cpu().numpy()
-    # }
 
     # construct grid from predictions
     out_cpwl = Delaunay(**ret_dict)
@@ -106,14 +106,8 @@ def plot_model(args):
                        color='normal',
                        constrast=(True
                                   if 'face' in params['data']['dataset_name']
-                                  else False))
-    # plot.plot_delaunay(data_obj.cpwl,
-    #                    out_cpwl,
-    #                    observations=False,
-    #                    color='normal',
-    #                    constrast=(True
-    #                               if 'face' in params['data']['dataset_name']
-    #                               else False))
+                                  else False),
+                       filename='model')
 
     print('\nTrain mse : {:.2E}'.format(train_mse))
     print('Test mse  : {:.2E}'.format(test_mse))
