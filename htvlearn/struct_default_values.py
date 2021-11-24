@@ -3,11 +3,10 @@ Define default values of parameters and desired structure for the
 parameters dictionary.
 """
 
-# defaults are for HTV method
-# on quad_top_planes dataset
+# defaults are for HTV method on the data fitting task
 default_values = {
     'method': 'htv',
-    'lmbda': 2e-3,  # 8e-2 for RBF
+    'lmbda': 4e-3,
     'no_htv': False,
     # logs-related
     'log_dir': 'output',

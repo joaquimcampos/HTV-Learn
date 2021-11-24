@@ -9,8 +9,7 @@ from htvlearn.htv_utils import ArgCheck, assign_tree_structure
 from htvlearn.struct_default_values import structure, default_values
 
 
-# Fix the Acknowledgements (new Grant)
-# Check setup.cfg: ignore = W504,W605,D205,D100,D101,D102,D103,D104,D400
+# TODO: Fix the Acknowledgements (new Grant)
 def get_arg_parser():
     """
     Parse command-line arguments.
