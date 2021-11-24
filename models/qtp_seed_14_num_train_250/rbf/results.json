@@ -1,6 +1,6 @@
 {
     "lmbda_0.08_eps_7": {
-        "test_mse": 5.47e-05,
+        "test_mse": 5.48e-05,
         "train_mse": 5.91e-05,
         "htv": {
             "1": 8.5,

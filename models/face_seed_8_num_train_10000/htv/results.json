@@ -1,20 +1,20 @@
 {
     "lmbda_2e-3": {
-        "test_mse": 3.13e-06,
+        "test_mse": 2.96e-06,
         "valid_mse": 3.11e-06,
         "train_mse": 1.08e-06,
         "percentage_nonzero": 10.4,
         "htv": 20.1
     },
     "lmbda_7e-3": {
-        "test_mse": 4.89e-06,
+        "test_mse": 4.75e-06,
         "valid_mse": 5.11e-06,
         "train_mse": 3.12e-06,
         "percentage_nonzero": 8.61,
         "htv": 15.8
     },
     "lmbda_5e-2": {
-        "test_mse": 1.94e-05,
+        "test_mse": 1.93e-05,
         "valid_mse": 2.12e-05,
         "train_mse": 1.82e-05,
         "percentage_nonzero": 6.1,
