@@ -8,7 +8,6 @@ from htvlearn.algorithm import Algorithm
 from htvlearn.operators import Operators
 from htvlearn.hessian import get_finite_second_diff_Hessian
 from htvlearn.htv_utils import compute_mse_snr
-from htvlearn.lattice import Lattice
 
 
 class HTVManager(HTVProject):
