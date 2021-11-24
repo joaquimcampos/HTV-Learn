@@ -53,13 +53,21 @@ class Grid:
             meshgrid_size:
                 size of the meshgrid tensor.
         """
-        self.x1_vec = torch.tensor(
-            list(frange(self.x1_min, self.x1_max, self.h)))
-        self.x2_vec = torch.tensor(
-            list(frange(self.x2_min, self.x2_max, self.h)))
+        x1_list = list(frange(self.x1_min, self.x1_max, self.h))
+        if (isinstance(self.x1_min, int) and
+                isinstance(self.x1_max, int) and
+                isinstance(self.h, int)):
+            self.x1_vec = torch.tensor(x1_list, dtype=torch.int64)
+        else:
+            self.x1_vec = torch.tensor(x1_list, dtype=torch.float64)
 
-        assert self.x1_vec.dtype == torch.float64 or \
-            self.x1_vec.dtype == torch.int64
+        x2_list = list(frange(self.x2_min, self.x2_max, self.h))
+        if (isinstance(self.x2_min, int) and
+                isinstance(self.x2_max, int) and
+                isinstance(self.h, int)):
+            self.x2_vec = torch.tensor(x2_list, dtype=torch.int64)
+        else:
+            self.x2_vec = torch.tensor(x2_list, dtype=torch.float64)
 
         # Do not use to_float32=True when computing HTV (precision problems)
         if self.to_float32 is True and self.x1_vec.dtype == torch.float64:
