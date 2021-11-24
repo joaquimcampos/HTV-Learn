@@ -68,13 +68,8 @@ We can plot a model and its associated dataset via the command:
 
     >> ./scripts/plot_model.py [model]
 
-To learn from scratch, we can run:
-
-.. code-block:: bash
-
-    >> ./main.py [options]
-
-To see the running options, please add :bash:`--help` to the command above.
+To reproduce the results from scratch, we can run the scripts matching the pattern `./scripts/run_*.py`
+(e.g. `./scripts/run_face_htv.py`). To see the running options, add `--help` to this command.
 
 Developers
 ==========
