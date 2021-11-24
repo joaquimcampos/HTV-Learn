@@ -200,9 +200,12 @@ class Data():
                 self.delaunay['points'], self.delaunay['values'] = \
                     self.init_pyramid()
 
-                # training is made of all pyramid vertices except apex
-                self.train['input'] = self.delaunay['points'][:-1].clone()
-                self.train['values'] = self.delaunay['values'][:-1].clone()
+                # training is made of all pyramid's points except apex
+                self.train['input'] = \
+                    torch.from_numpy(self.delaunay['points'][:-1]).clone()
+                self.train['values'] = \
+                    torch.from_numpy(self.delaunay['values'][:-1]).clone()
+
                 # force validation set to be equal to test set
                 self.test_as_valid = True
 
@@ -425,28 +428,12 @@ class Data():
                                [-h, 0.], [-h, h],
                                [0., 0.]])  # last element -> apex
 
-        values = torch.tensor([.1, .1, .1, .1, .1, .1,
-                               .2, .2, .2, .2, .2, .2,
-                               .3])
-
-        if False:
-            # extended pyramid
-            points_ext = torch.tensor([[3 * h, 0.], [0., 3 * h],
-                                       [2.95 * h, -2.85 * h], [0., -3 * h],
-                                       [-3 * h, 0.], [-3 * h, 3 * h]])
-
-            values_ext = torch.tensor([.1, .1, .1, .1, .1, .1])
-
-            points = torch.cat((points, points_ext), dim=0)
-            values = torch.cat((values, values_ext), dim=0)
+        values = torch.tensor([.0, .0, .0, .0, .0, .0,
+                               .1, .1, .1, .1, .1, .1,
+                               .2])
 
         # convert to standard coordinates
         points = (Lattice.hexagonal_matrix @ points.t()).t()
-
-        if False:
-            # linear term
-            a, b = torch.tensor([.2, .2]) + torch.tensor([.1])
-            values = values + (points * a.unsqueeze(0)).sum(1) + b
 
         return points.numpy(), values.numpy()
 
