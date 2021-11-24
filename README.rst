@@ -39,7 +39,17 @@ To install the package, we first create an environment with python 3.8:
     >> conda create -y -n htv python=3.8
     >> source activate htv
 
-Then, we install the requirements via the command:
+Then, we clone the repository:
+
+.. code-block:: bash
+
+    >> git clone https://github.com/joaquimcampos/HTV-Learn
+    >> cd HTV-Learn
+
+.. role:: bash(code)
+   :language: bash
+
+Finally, we install the requirements via the command:
 
 .. code-block:: bash
 
