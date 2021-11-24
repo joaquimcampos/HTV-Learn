@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-'''
-This script reproduces the results for RBF on the data fitting task.
-'''
+"""This script reproduces the results for RBF on the data fitting task."""
 
 import os
 import argparse
 import copy
-import torch
 
 from htvlearn.main import main_prog
 

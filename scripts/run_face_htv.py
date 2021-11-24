@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-'''
-This script reproduces the results for HTV on the face dataset.
-'''
+"""This script reproduces the results for HTV on the face dataset."""
 
 import os
 import argparse
 import copy
-import torch
 
 from htvlearn.main import main_prog
 
