@@ -1,0 +1,8 @@
+numpy >= 1.10
+django >= 3.2.7
+scipy >= 1.7.1
+torch >= 1.9.0
+matplotlib >= 3.4.3
+plotly >= 5.3.1
+cvxopt >= 1.2.6
+odl >= 0.7.0
