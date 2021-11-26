@@ -15,6 +15,7 @@ def plot_data(args):
     data_params = {
         'dataset_name': args.dataset_name,
         'num_train': args.num_train,
+        'non_uniform': args.non_uniform,
         'noise_ratio': args.noise_ratio,
         'seed': args.seed
     }
@@ -63,6 +64,11 @@ if __name__ == "__main__":
         metavar='[INT>0]',
         type=ArgCheck.p_int,
         default=10000,
+        help=' ')
+
+    parser.add_argument(
+        '--non_uniform',
+        action='store_true',
         help=' ')
 
     parser.add_argument(

@@ -86,6 +86,12 @@ def get_arg_parser():
         f'(default: {default_values["test_as_valid"]})')
 
     parser.add_argument(
+        '--non_uniform',
+        action='store_true',
+        help='Perform non-uniform sampling of data. '
+        f'(default: {default_values["non_uniform"]})')
+
+    parser.add_argument(
         '--noise_ratio',
         metavar='[FLOAT,>0]',
         type=ArgCheck.nn_float,
@@ -261,6 +267,10 @@ def verify_params(params):
         if params['simplex'] is True:
             print('--simplex being overwritten to False.')
             params['simplex'] = False  # force simplex=False
+
+    if (params['non_uniform'] is True and
+            'face' not in params['dataset_name']):
+        raise ValueError('--non_uniform can only be set with face dataset.')
 
     if params['method'] != 'neural_net' and \
             params['device'].startswith('cuda'):

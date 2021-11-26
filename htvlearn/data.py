@@ -118,6 +118,7 @@ class Data():
                  data_dir='./data',
                  valid_fraction=0.2,
                  test_as_valid=False,
+                 non_uniform=False,
                  noise_ratio=0.,
                  seed=-1,
                  verbose=False,
@@ -138,6 +139,8 @@ class Data():
                 fraction of num_train samples that is used for validation
             test_as_valid (bool):
                 if True, use test set in validation.
+            non_uniform (bool):
+                if True, perform non-uniform data sampling (face dataset only).
             noise_ratio (float >= 0):
                 noise that should be applied to the samples as a fraction of
                 the data range.
@@ -158,6 +161,7 @@ class Data():
         self.data_dir = data_dir
         self.valid_fraction = valid_fraction
         self.test_as_valid = test_as_valid
+        self.non_uniform = non_uniform
         self.noise_ratio = noise_ratio
         self.seed = seed
         self.verbose = verbose
@@ -270,6 +274,23 @@ class Data():
                 x_lat.uniform_(-0.5, 0.5)
                 # convert to standard coordinates
                 x = (Lattice.hexagonal_matrix @ x_lat.t()).t()
+
+            elif self.non_uniform is True:
+                hull_points = \
+                    self.cpwl.tri.points[self.cpwl.convex_hull_points_idx]
+                # compute largest distance
+                max_dist = np.amax(np.sqrt(np.sum(hull_points ** 2, axis=1)))
+                # radius
+                r = (torch.empty((num_train_valid_samples, 1))
+                     .uniform_(0., max_dist * 0.8))
+                # angle
+                theta = (torch.empty((num_train_valid_samples, 1))
+                         .uniform_(0., 2 * np.pi))
+                # points
+                x = torch.cat((r * theta.cos(), r * theta.sin()), dim=1)
+                # Only keep points inside cpwl convex hull
+                x_simplices_idx = self.cpwl.tri.find_simplex(x)
+                x = x[x_simplices_idx >= 0]
             else:
                 # generate num_train_valid_samples uniformly distributed
                 # in cpwl convex set
