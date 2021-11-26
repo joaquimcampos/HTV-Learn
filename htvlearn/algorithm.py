@@ -350,7 +350,7 @@ class Algorithm():
         # L_mat_sparse is not multiplied by lmbda
         L_z = self.op.L_mat_sparse.dot(z)
         htv_loss = np.linalg.norm(L_z, ord=1)
-        self.results_dict['_'.join(mode, 'htv')] = htv_loss
+        self.results_dict['_'.join([mode, 'htv'])] = htv_loss
 
         total_loss = df_loss + self.lmbda * htv_loss
 
