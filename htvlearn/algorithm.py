@@ -59,7 +59,7 @@ class Algorithm():
         self.verbose = verbose
 
         # log_step for admm iterations
-        self.log_step = min(self.admm_iter, 200000)
+        self.log_step = min(self.admm_iter, 600000)
 
         # verify inputs
         self.input = self.data.train['input']
@@ -177,7 +177,7 @@ class Algorithm():
         tau = sigma / op_norm**2
 
         if self.verbose:
-            print('admm (tau, sigma): ({:.3f}, {:.4f})'.format(tau, sigma))
+            print('admm (tau, sigma): ({:.3E}, {:.3E})'.format(tau, sigma))
 
         callback = (odl.solvers.CallbackPrintIteration(step=2000))
 
