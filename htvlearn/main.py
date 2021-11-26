@@ -118,9 +118,10 @@ def get_arg_parser():
 
     parser.add_argument(
         '--sigma',
-        metavar='[FLOAT,>0]',
-        type=ArgCheck.nn_float,
-        help='step size for admm. If None, sigma = lmbda.'
+        metavar='[FLOAT]',
+        type=ArgCheck.float,
+        help='step size for admm. If None, sigma = lmbda. '
+        'If negative, sigma = 1. / lmbda.'
         f'(default: {default_values["sigma"]})')
 
     parser.add_argument(
