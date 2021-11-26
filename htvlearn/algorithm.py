@@ -171,6 +171,8 @@ class Algorithm():
         if self.sigma is None:
             # if self.lmbda = 0, need to set a positive sigma
             sigma = self.lmbda if self.lmbda > 0 else 2.0
+        elif float(self.sigma) < 0:
+            sigma = 1. / self.lmbda  # inverse
         else:
             sigma = float(self.sigma)  # constant
         # set step size for f.proximal
