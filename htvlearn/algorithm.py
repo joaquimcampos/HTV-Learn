@@ -22,6 +22,7 @@ class Algorithm():
                  model_name,
                  lmbda,
                  admm_iter=100000,
+                 sigma=None,
                  simplex=False,
                  verbose=False,
                  **kwargs):
@@ -36,6 +37,8 @@ class Algorithm():
                 regularization weight.
             admm_iter (int):
                 number of admm iterations to run.
+            sigma (None or float):
+                step size for admm. If None, sigma = lmbda.
             simplex (bool):
                 If True, perform simplex after admm.
             verbose (bool):
@@ -51,6 +54,7 @@ class Algorithm():
         self.model_name = model_name
         self.lmbda = lmbda
         self.admm_iter = admm_iter
+        self.sigma = sigma
         self.simplex = simplex
         self.verbose = verbose
 
@@ -161,10 +165,14 @@ class Algorithm():
         # We don't use the f functional, setting it to zero
         f = odl.solvers.ZeroFunctional(stack_op.domain)
 
-        # Estimated operator norm, add 10 percent for some safety margin
-        op_norm = 1.1 * odl.power_method_opnorm(stack_op, maxiter=1000)
+        # Estimated operator norm, add 20 percent for some safety margin
+        op_norm = 1.2 * odl.power_method_opnorm(stack_op, maxiter=1000)
         # set step size for g.proximal
-        sigma = self.lmbda if self.lmbda > 0 else 2.0  # sigma = 2.0 (constant)
+        if self.sigma is None:
+            # if self.lmbda = 0, need to set a positive sigma
+            sigma = self.lmbda if self.lmbda > 0 else 2.0
+        else:
+            sigma = float(self.sigma)  # constant
         # set step size for f.proximal
         tau = sigma / op_norm**2
 

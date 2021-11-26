@@ -117,6 +117,13 @@ def get_arg_parser():
         f'(default: {default_values["admm_iter"]})')
 
     parser.add_argument(
+        '--sigma',
+        metavar='[FLOAT,>0]',
+        type=ArgCheck.nn_float,
+        help='step size for admm. If None, sigma = lmbda.'
+        f'(default: {default_values["sigma"]})')
+
+    parser.add_argument(
         '--simplex',
         action='store_true',
         help='Perform simplex after admm. '
