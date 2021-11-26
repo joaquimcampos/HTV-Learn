@@ -231,7 +231,8 @@ class Algorithm():
             self.update_results_dict(z, 'simplex')
 
         if np.allclose(z, self.z_admm, atol=1e-5):
-            print('\n=> no change after simplex: z_simplex = z_admm')
+            print_msg = 'No change after simplex: z_simplex = z_admm'
+            print('\n=> ' + print_msg)
 
         # checks
         assert np.allclose(y_lmbda_simplex, self.y_lmbda_admm, atol=1e-5)
@@ -242,12 +243,10 @@ class Algorithm():
             if not np.allclose(htv_loss_simplex,
                                self.htv_loss_admm,
                                atol=1e-3):
-                warnings.warn(
-                    f'ADMM did not fully converge! \nReg. loss: \n'
-                    f'simplex: {htv_loss_simplex} != '
-                    f'admm: {self.htv_loss_admm}',
-                    UserWarning
-                )
+                print_msg = ('ADMM did not fully converge! \nReg. loss: \n' +
+                             'simplex: {:.3E} != '.format(htv_loss_simplex) +
+                             'admm: {:.3E}'.format(self.htv_loss_admm))
+                warnings.warn(print_msg, UserWarning)
 
     def setup_simplex(self):
         """
@@ -351,6 +350,7 @@ class Algorithm():
         # L_mat_sparse is not multiplied by lmbda
         L_z = self.op.L_mat_sparse.dot(z)
         htv_loss = np.linalg.norm(L_z, ord=1)
+        self.results_dict['_'.join(mode, 'htv')] = htv_loss
 
         total_loss = df_loss + self.lmbda * htv_loss
 
