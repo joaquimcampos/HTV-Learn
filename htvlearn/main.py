@@ -101,7 +101,7 @@ def get_arg_parser():
 
     parser.add_argument(
         '--seed',
-        metavar='INT',
+        metavar='[INT]',
         type=int,
         help='Seed for random generation of dataset. '
         'If negative, set no seed. '
@@ -125,7 +125,7 @@ def get_arg_parser():
     parser.add_argument(
         '--sigma',
         metavar='[FLOAT]',
-        type=ArgCheck.float,
+        type=float,
         help='step size for admm. If None, sigma = lmbda. '
         'If negative, sigma = 1. / lmbda.'
         f'(default: {default_values["sigma"]})')
