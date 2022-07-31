@@ -15,12 +15,11 @@ REPO=/home/jogoncal/repos/HTV-Learn
 lmbda_list=(8e-4 9e-4 1e-3 2e-3 3e-3 4e-3
             5e-3 6e-3 7e-3 8e-3 9e-3 1e-2 3e-2 5e-2 8e-2)
 
-start_idx=$((lmbda_range*3))
-end_idx=$((start_idx+3))
-
+start_idx=$(($idx*3))
+len=3
 seed=10
 
-for lmbda in ${lmbda_list[@]:$start_idx:$end_idx};
+for lmbda in ${lmbda_list[@]:$start_idx:$len};
 do
     taskset --cpu-list "$cpu" python3 "$REPO"/htvlearn/main.py --method htv \
     --lmbda "$lmbda" --log_dir "$REPO"/output/htv/ \
