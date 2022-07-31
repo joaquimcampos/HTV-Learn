@@ -74,7 +74,7 @@ class Grid:
             self.x1_vec = self.x1_vec.float()
             self.x2_vec = self.x2_vec.float()
 
-        X2, X1 = torch.meshgrid(self.x2_vec, self.x1_vec)
+        X2, X1 = torch.meshgrid(self.x2_vec, self.x1_vec, indexing='ij')
         self.meshgrid_size = tuple(X1.size())
         self.x = torch.cat((X1.reshape(-1, 1), X2.reshape(-1, 1)), dim=1)
 
