@@ -13,7 +13,8 @@ read idx
 REPO=/home/jogoncal/repos/HTV-Learn
 
 lmbda_list=(8e-4 9e-4 1e-3 2e-3 3e-3 4e-3
-            5e-3 6e-3 7e-3 8e-3 9e-3 1e-2 3e-2 5e-2 8e-2)
+            5e-3 6e-3 7e-3 8e-3 9e-3 1e-2 3e-2 5e-2 8e-2
+	    1.5e-2 2e-2 2.5e-2 4e-2 6e-2 7e-2)
 
 start_idx=$(($idx*3))
 len=3
