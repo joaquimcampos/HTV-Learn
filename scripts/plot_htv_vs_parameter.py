@@ -30,7 +30,9 @@ def plot_htv_vs_parameter(args):
     zeros = np.zeros_like(parameter_array)
     htv = {'1': zeros.copy(), '2': zeros.copy(), '10': zeros.copy()}
     if args.parameter == 'num_hidden_layers' or \
+            args.parameter == 'num_hidden_neurons' or \
             args.parameter == 'weight_decay':
+
         htv = zeros.copy()
         nn = True
 
@@ -46,35 +48,62 @@ def plot_htv_vs_parameter(args):
         if nn is True:
             if not params['method'] == 'neural_net':
                 raise ValueError('Method should be "neural_net".')
-            if i == 0:
-                hidden = params["model"]["hidden"]
-                label_str = r"nb_Hneurons = ${:d}$. ".format(hidden)
-            elif params["model"]["hidden"] != hidden:
-                raise ValueError(f'{params["model"]["hidden"]} != {hidden}')
+
         elif not params['method'] == 'rbf':
             raise ValueError('Method should be "rbf".')
 
         if args.parameter == 'num_hidden_layers':
             if i == 0:
+                nhiddenN = params["model"]["num_hidden_neurons"]
                 wd = params["weight_decay"]
-                label_str += r"$\mu$ = ${:.1E}$".format(wd)
+                label_str = r"$N_n$ = ${:d}$. ".format(nhiddenN)
+                label_str += r"$\mu$ = ${:.1E}$.".format(wd)
                 ax.set_xlabel(r"$N_L$", fontsize=20)
                 ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+            elif params["model"]["num_hidden_neurons"] != nhiddenN:
+                raise ValueError(f'{params["model"]["num_hidden_neurons"]} '
+                                 '!= {nhiddenN}')
+
             elif params["weight_decay"] != wd:
                 raise ValueError(f'{params["weight_decay"]} != {wd}')
 
             parameter_array[i] = params["model"]["num_hidden_layers"]
 
+        if args.parameter == 'num_hidden_neurons':
+            if i == 0:
+                nhiddenL = params["model"]["num_hidden_layers"]
+                wd = params["weight_decay"]
+                label_str = r"$N_L$ = ${:d}$. ".format(nhiddenL)
+                label_str += r"$\mu$ = ${:.1E}$.".format(wd)
+                ax.set_xlabel(r"$N_n$", fontsize=20)
+                ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+            elif params["model"]["num_hidden_layers"] != nhiddenL:
+                raise ValueError(f'{params["model"]["num_hidden_layers"]} '
+                                 '!= {nhiddenL}')
+
+            elif params["weight_decay"] != wd:
+                raise ValueError(f'{params["weight_decay"]} != {wd}')
+
+            parameter_array[i] = params["model"]["num_hidden_neurons"]
+
         elif args.parameter == 'weight_decay':
             if i == 0:
-                num_hidden_layers = params["model"]["num_hidden_layers"]
-                label_str += r"nb_Hlayers = ${:d}$. ".format(num_hidden_layers)
+                nhiddenL = params["model"]["num_hidden_layers"]
+                nhiddenN = params["model"]["num_hidden_neurons"]
+                label_str = r"$N_L$ = ${:d}$. ".format(nhiddenL)
+                label_str += r"$N_n$ = ${:d}$.".format(nhiddenN)
                 ax.set_xlabel(r"$\mu$", fontsize=20)
-            elif params["model"]["num_hidden_layers"] != num_hidden_layers:
-                raise ValueError(
-                    f'{params["model"]["num_hidden_layers"]} '
-                    f'!= {num_hidden_layers}'
-                )
+                ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+            elif params["model"]["num_hidden_layers"] != nhiddenL:
+                raise ValueError(f'{params["model"]["num_hidden_layers"]} '
+                                 '!= {nhiddenL}')
+
+            elif params["model"]["num_hidden_neurons"] != nhiddenN:
+                raise ValueError(f'{params["model"]["num_hidden_neurons"]} '
+                                 '!= {nhiddenN}')
 
             parameter_array[i] = params["weight_decay"]
 
@@ -150,7 +179,7 @@ def plot_htv_vs_parameter(args):
                 lw=lw,
                 label='GT HTV')
 
-    if args.parameter in ['weight_decay', 'lmbda']:
+    if args.parameter in ['weight_decay', 'num_hidden_neurons', 'lmbda']:
         ax.semilogx()
 
     if nn is False:
@@ -173,6 +202,7 @@ if __name__ == "__main__":
         description='Load parameters from checkpoint file.')
 
     param_choices = ['num_hidden_layers',
+                     'num_hidden_neurons',
                      'weight_decay',
                      'lmbda',
                      'sigma']
