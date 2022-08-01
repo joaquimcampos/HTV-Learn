@@ -28,7 +28,7 @@ do
     for lmbda in ${lmbda_list[@]};
     do
         taskset --cpu-list "$cpu" python3 "$REPO"/htvlearn/main.py --method rbf \
-        --eps "$eps" --lmbda "$lmbda" --log_dir "$REPO"/output/rbf/ --verbose \
+        --eps "$eps" --lmbda "$lmbda" --log_dir "$REPO"/output/rbf/rbf_"$nb"_"$idx" --verbose \
         --model_name rbf_cut_face_gaps_seed_"$seed"_num_train_"$nb"_eps_"$eps"_lmbda_"$lmbda" \
         --dataset_name cut_face_gaps --num_train "$nb" \
         --noise_ratio 0 --seed "$seed"

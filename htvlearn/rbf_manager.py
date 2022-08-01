@@ -121,7 +121,7 @@ class RBFManager(RBFProject):
 
         return mse, output
 
-    def evaluate_func(self, x, batch_size=100000):
+    def evaluate_func(self, x, batch_size=50000):
         """
         Evaluate model function for some input.
 
