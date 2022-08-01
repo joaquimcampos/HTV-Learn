@@ -7,7 +7,7 @@ echo -n "Enter cpu-list (x,y): "
 read cpu
 
 # from 0 to 9
-echo -n "Enter lmbda index:"
+echo -n "Enter eps index:"
 read idx
 
 REPO=/home/jogoncal/repos/HTV-Learn
@@ -25,13 +25,12 @@ seed=10
 
 for eps in ${eps_list[@]:$start_idx:$len};
 do
-  for lmbda in ${lmbda_list[@]};
-  do
-    taskset --cpu-list "$cpu" python3 "$REPO"/htvlearn/main.py --method rbf \
-    --eps "$eps" --lmbda "$lmbda" --log_dir "$REPO"/output/rbf/ \
-    --model_name \
-    rbf_cut_face_gaps_seed_"$seed"_num_train_"$nb"_eps_"$eps"_lmbda_"$lmbda"
-    --dataset_name cut_face_gaps --num_train "$nb" \
-    --noise_ratio 0 --seed "$seed" -v
-  done
+    for lmbda in ${lmbda_list[@]};
+    do
+        taskset --cpu-list "$cpu" python3 "$REPO"/htvlearn/main.py --method rbf \
+        --eps "$eps" --lmbda "$lmbda" --log_dir "$REPO"/output/rbf/ --verbose \
+        --model_name rbf_cut_face_gaps_seed_"$seed"_num_train_"$nb"_eps_"$eps"_lmbda_"$lmbda" \
+        --dataset_name cut_face_gaps --num_train "$nb" \
+        --noise_ratio 0 --seed "$seed"
+    done
 done
