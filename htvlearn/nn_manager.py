@@ -305,7 +305,7 @@ class NNManager(NNProject):
 
         return htv
 
-    def evaluate_func(self, x, batch_size=1000000):
+    def evaluate_func(self, x, batch_size=500000):
         """
         Evaluate model function for some input.
 
