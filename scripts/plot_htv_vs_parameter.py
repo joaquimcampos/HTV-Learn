@@ -9,8 +9,10 @@ from matplotlib.ticker import MaxNLocator
 from htvlearn.master_project import MasterProject
 from htvlearn.nn_manager import NNManager
 from htvlearn.rbf_manager import RBFManager
+from htvlearn.htv_manager import HTVManager
 from htvlearn.rbf import RBF
 from htvlearn.htv_utils import add_date_to_filename
+from htvlearn.htv_utils import silence_stdout
 
 
 lw = 1  # linewidth
@@ -36,10 +38,13 @@ def plot_htv_vs_parameter(args):
         htv = zeros.copy()
         nn = True
 
+    # with silence_stdout():
+
     for i, log_dir in enumerate(args.log_dirs):
 
         if not os.path.isdir(log_dir):
-            raise ValueError(f'log_dir "{log_dir}" is not a valid directory.')
+            raise ValueError(f'log_dir "{log_dir}" is not a '
+                             'valid directory.')
 
         ckpt_filename = MasterProject.get_ckpt_from_log_dir_model(log_dir)
         ckpt, params = MasterProject.load_ckpt_params(ckpt_filename,
@@ -50,41 +55,31 @@ def plot_htv_vs_parameter(args):
                 raise ValueError('Method should be "neural_net".')
 
         elif not params['method'] == 'rbf':
-            raise ValueError('Method should be "rbf".')
+            raise ValueError('Only neural net and rbf models are allowed.')
 
         if args.parameter == 'num_hidden_layers':
             if i == 0:
                 nhiddenN = params["model"]["num_hidden_neurons"]
-                wd = params["weight_decay"]
                 label_str = r"$N_n$ = ${:d}$. ".format(nhiddenN)
-                label_str += r"$\mu$ = ${:.1E}$.".format(wd)
                 ax.set_xlabel(r"$N_L$", fontsize=20)
                 ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
             elif params["model"]["num_hidden_neurons"] != nhiddenN:
-                raise ValueError(f'{params["model"]["num_hidden_neurons"]} '
-                                 '!= {nhiddenN}')
-
-            elif params["weight_decay"] != wd:
-                raise ValueError(f'{params["weight_decay"]} != {wd}')
+                raise ValueError(f'{params["model"]["num_hidden_neurons"]}'
+                                 ' != {nhiddenN}')
 
             parameter_array[i] = params["model"]["num_hidden_layers"]
 
-        if args.parameter == 'num_hidden_neurons':
+        elif args.parameter == 'num_hidden_neurons':
             if i == 0:
                 nhiddenL = params["model"]["num_hidden_layers"]
-                wd = params["weight_decay"]
                 label_str = r"$N_L$ = ${:d}$. ".format(nhiddenL)
-                label_str += r"$\mu$ = ${:.1E}$.".format(wd)
                 ax.set_xlabel(r"$N_n$", fontsize=20)
                 ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
             elif params["model"]["num_hidden_layers"] != nhiddenL:
                 raise ValueError(f'{params["model"]["num_hidden_layers"]} '
                                  '!= {nhiddenL}')
-
-            elif params["weight_decay"] != wd:
-                raise ValueError(f'{params["weight_decay"]} != {wd}')
 
             parameter_array[i] = params["model"]["num_hidden_neurons"]
 
@@ -102,8 +97,8 @@ def plot_htv_vs_parameter(args):
                                  '!= {nhiddenL}')
 
             elif params["model"]["num_hidden_neurons"] != nhiddenN:
-                raise ValueError(f'{params["model"]["num_hidden_neurons"]} '
-                                 '!= {nhiddenN}')
+                raise ValueError(f'{params["model"]["num_hidden_neurons"]}'
+                                 ' != {nhiddenN}')
 
             parameter_array[i] = params["weight_decay"]
 
@@ -133,7 +128,7 @@ def plot_htv_vs_parameter(args):
         print('Parameters: ', params, sep='\n')
 
         if i == 0:
-            exact_htv = np.ones_like(parameter_array) * ckpt['exact_htv']
+            exact_htv = ckpt['exact_htv']
         else:
             if not np.allclose(ckpt['exact_htv'], exact_htv):
                 raise ValueError('Models do not have the same HTV.')
@@ -145,6 +140,57 @@ def plot_htv_vs_parameter(args):
             htv_model = RBFManager.read_htv_log(ckpt['htv_log'])
             for p in htv.keys():
                 htv[p][i] = htv_model[p]
+
+    if args.cmp_log_dirs is not None:
+        cmp_htv = np.zeros(len(args.cmp_log_dirs))
+        cmp_label_str = []
+        # to check if at most one model of each method is given
+        found = {'htv': False, 'nn': False, 'rbf': False}
+
+        for i, log_dir in enumerate(args.cmp_log_dirs):
+
+            if not os.path.isdir(log_dir):
+                raise ValueError(f'log_dir "{log_dir}" is not a '
+                                 'valid directory.')
+
+            ckpt_filename = \
+                MasterProject.get_ckpt_from_log_dir_model(log_dir)
+            ckpt, params = MasterProject.load_ckpt_params(ckpt_filename,
+                                                          flatten=False)
+
+            if params['method'] == 'htv':
+                if found['htv'] is False:
+                    htv_model = HTVManager.read_htv_log(ckpt['htv_log'])
+                    cmp_htv[i] = htv_model
+                    cmp_label_str.append('HTV')
+                    found['htv'] = True
+                else:
+                    raise ValueError('Only one htv model allowed '
+                                     'for comparison.')
+
+            elif params['method'] == 'neural_net':
+                if found['nn'] is False:
+                    _, htv_model = NNManager.read_htv_log(ckpt['htv_log'])
+                    cmp_htv[i] = \
+                        htv_model[0] if args.first else htv_model[-1]
+                    cmp_label_str.append('NN')
+                    found['nn'] = True
+                else:
+                    raise ValueError('Only one neural net model allowed '
+                                     'for comparison.')
+
+            elif params['method'] == 'rbf':
+                if found['rbf'] is False:
+                    htv_model = RBFManager.read_htv_log(ckpt['htv_log'])
+                    cmp_htv[i] = htv_model['1']  # use htv p=1
+                    cmp_label_str.append("RBF " + r"$p = 1$")
+                    found['rbf'] = True
+                else:
+                    raise ValueError('Only one rbf model allowed '
+                                     'for comparison.')
+
+            else:
+                raise ValueError(f"Method {params['method']} is unknown.")
 
     print(f'Plotting {label_str}')
     # sort array
@@ -172,12 +218,19 @@ def plot_htv_vs_parameter(args):
         ax.set_ylabel(r"$\mathrm{HTV_p}$", fontsize=20)
 
     if args.plot_exact_htv:
-        exact_htv = exact_htv[idx]
         ax.plot(parameter_array,
-                exact_htv,
+                np.ones_like(parameter_array) * exact_htv,
                 linestyle='--',
                 lw=lw,
                 label='GT HTV')
+
+    if args.cmp_log_dirs is not None:
+        for i in range(len(args.cmp_log_dirs)):
+            ax.plot(parameter_array,
+                    np.ones_like(parameter_array) * cmp_htv[i],
+                    linestyle='--',
+                    lw=lw,
+                    label=cmp_label_str[i])
 
     if args.parameter in ['weight_decay', 'num_hidden_neurons', 'lmbda']:
         ax.semilogx()
@@ -199,7 +252,7 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(
-        description='Load parameters from checkpoint file.')
+        description='Plot htv vs parameter for neural net and rbf models.')
 
     param_choices = ['num_hidden_layers',
                      'num_hidden_neurons',
@@ -219,6 +272,14 @@ if __name__ == "__main__":
         metavar='[LIST[STR]]',
         type=str,
         help='ckpt log directories.')
+
+    parser.add_argument(
+        '--cmp_log_dirs',
+        nargs='+',
+        metavar='[LIST[STR]]',
+        type=str,
+        help='comparison ckpt log directories. '
+             'Only one model per method allowed.')
 
     parser.add_argument(
         '--first',

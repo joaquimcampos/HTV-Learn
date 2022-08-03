@@ -24,6 +24,7 @@ def print_model(args):
     ckpt = MasterProject.get_loaded_ckpt(args.ckpt_filename)
     params = ckpt['params']
     params['log_dir'] = '/'.join(args.ckpt_filename.split('/')[:-2])
+    params['data']['log_dir'] = params['log_dir']
 
     print('\nLoading parameters from checkpoint : ',
           args.ckpt_filename,
@@ -53,8 +54,8 @@ def print_model(args):
             if ckpt['htv_log']:
                 htv = manager.read_htv_log(ckpt['htv_log'])[-1]
 
-        test_mse, output_test = manager.evaluate_results(mode='test')
-        train_mse, output_train = manager.evaluate_results(mode='train')
+        test_mse, _ = manager.evaluate_results(mode='test')
+        train_mse, _ = manager.evaluate_results(mode='train')
 
         data_obj = manager.data
         test_snr = compute_snr(data_obj.test['values'], test_mse)
