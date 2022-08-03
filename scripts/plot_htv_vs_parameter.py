@@ -12,11 +12,26 @@ from htvlearn.rbf_manager import RBFManager
 from htvlearn.htv_manager import HTVManager
 from htvlearn.rbf import RBF
 from htvlearn.htv_utils import add_date_to_filename
-from htvlearn.htv_utils import silence_stdout
+# from htvlearn.htv_utils import silence_stdout
 
 
 lw = 1  # linewidth
 ms = 2  # markersize
+
+
+def load_ckpt_params(log_dir):
+    """
+    Args:
+        log_dir: log directory
+    """
+    ckpt_filename = MasterProject.get_ckpt_from_log_dir_model(log_dir)
+    ckpt, params = MasterProject.load_ckpt_params(ckpt_filename,
+                                                  flatten=False)
+    params['log_dir'] = '/'.join(ckpt_filename.split('/')[:-2])
+    params['data']['log_dir'] = params['log_dir']
+    params['restore'] = True
+
+    return ckpt, params
 
 
 def plot_htv_vs_parameter(args):
@@ -38,17 +53,14 @@ def plot_htv_vs_parameter(args):
         htv = zeros.copy()
         nn = True
 
-    # with silence_stdout():
-
     for i, log_dir in enumerate(args.log_dirs):
 
         if not os.path.isdir(log_dir):
             raise ValueError(f'log_dir "{log_dir}" is not a '
                              'valid directory.')
 
-        ckpt_filename = MasterProject.get_ckpt_from_log_dir_model(log_dir)
-        ckpt, params = MasterProject.load_ckpt_params(ckpt_filename,
-                                                      flatten=False)
+        ckpt, params = load_ckpt_params(log_dir)
+        print('Parameters: ', params, sep='\n')
 
         if nn is True:
             if not params['method'] == 'neural_net':
@@ -125,8 +137,6 @@ def plot_htv_vs_parameter(args):
             parameter_array[i] = RBF.get_sigma_from_eps(
                 params["rbf"]["eps"])  # sigma
 
-        print('Parameters: ', params, sep='\n')
-
         if i == 0:
             exact_htv = ckpt['exact_htv']
         else:
@@ -153,10 +163,8 @@ def plot_htv_vs_parameter(args):
                 raise ValueError(f'log_dir "{log_dir}" is not a '
                                  'valid directory.')
 
-            ckpt_filename = \
-                MasterProject.get_ckpt_from_log_dir_model(log_dir)
-            ckpt, params = MasterProject.load_ckpt_params(ckpt_filename,
-                                                          flatten=False)
+            ckpt, params = load_ckpt_params(log_dir)
+            print('Parameters: ', params, sep='\n')
 
             if params['method'] == 'htv':
                 if found['htv'] is False:
@@ -204,7 +212,7 @@ def plot_htv_vs_parameter(args):
                 marker='o',
                 markersize=ms,
                 lw=lw,
-                label=None)
+                label='NN')
         ax.set_ylabel(r"$\mathrm{HTV}$", fontsize=20)
     else:
         for p in htv.keys():
@@ -214,7 +222,7 @@ def plot_htv_vs_parameter(args):
                     marker='o',
                     markersize=ms,
                     lw=lw,
-                    label=f'p = {p}')
+                    label="RBF " + r"$p = {:d}$".format(p))
         ax.set_ylabel(r"$\mathrm{HTV_p}$", fontsize=20)
 
     if args.plot_exact_htv:
@@ -235,9 +243,13 @@ def plot_htv_vs_parameter(args):
     if args.parameter in ['weight_decay', 'num_hidden_neurons', 'lmbda']:
         ax.semilogx()
 
-    if nn is False:
-        loc = "upper right"
-        ax.legend(loc=loc, prop={'size': 12})
+    loc = "upper right"
+    ax.legend(loc=loc, prop={'size': 12})
+
+    # extend y range by 10% bottom, 40% top
+    bottom, top = plt.ylim()
+    ext = 0.1 * (top - bottom)
+    plt.ylim(bottom=(bottom - ext), top=(top + ext * 4))
 
     if args.save_dir is not None:
         filename = os.path.join(args.save_dir,

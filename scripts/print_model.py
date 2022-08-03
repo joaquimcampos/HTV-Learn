@@ -25,6 +25,7 @@ def print_model(args):
     params = ckpt['params']
     params['log_dir'] = '/'.join(args.ckpt_filename.split('/')[:-2])
     params['data']['log_dir'] = params['log_dir']
+    params['restore'] = True
 
     print('\nLoading parameters from checkpoint : ',
           args.ckpt_filename,
@@ -33,9 +34,7 @@ def print_model(args):
 
     with silence_stdout():
 
-        params['restore'] = True
         htv = None
-
         if params['method'] == 'neural_net':
             manager = NNManager(params, log=False)
             if ckpt['htv_log']:

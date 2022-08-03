@@ -33,15 +33,15 @@ def plot_model(args):
     plot_log_dir = '/'.join(args.ckpt_filename.split('/')[:-1])
     params['plots']['log_dir'] = plot_log_dir
     params['log_dir'] = '/'.join(args.ckpt_filename.split('/')[:-2])
+    params['data']['log_dir'] = params['log_dir']
+    params['restore'] = True
 
     if args.log_dir is not None:
         params['plots']['log_dir'] = args.log_dir
 
     with silence_stdout():
 
-        params['restore'] = True
         htv = None
-
         if params['method'] == 'neural_net':
             manager = NNManager(params, log=False)
             if ckpt['htv_log']:
