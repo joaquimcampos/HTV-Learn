@@ -7,9 +7,9 @@
 
 The aim of this repository is to facilitate the reproduction of the results reported in the research papers:
 
-* "Learning of Continuous and Piecewise-Linear Functions with Hessian Total-Variation Regularization" (submitted);
+* `[Campos2022] <https://ieeexplore.ieee.org/document/9655475>`_ “Learning of Continuous and Piecewise-Linear Functions With Hessian Total-Variation Regularization.”
 
-* "Measuring Complexity of Learning Schemes Using Hessian-Schatten Total-Variation" (submitted).
+* `[Aziznejad2023] <https://epubs.siam.org/doi/10.1137/22M147517X>`_ “Measuring Complexity of Learning Schemes Using Hessian-Schatten Total Variation.”
 
 .. contents:: **Table of Contents**
     :depth: 2
@@ -61,7 +61,7 @@ Finally, we install the requirements via the command:
 Reproducing results
 ===================
 
-The models shown in the [Campos2020]_ are saved under the `models/ <https://github.com/joaquimcampos/HTV-Learn/tree/master/models>`_ folder.
+The models shown in `[Campos2022] <https://ieeexplore.ieee.org/document/9655475>`_ are saved under the `models/ <https://github.com/joaquimcampos/HTV-Learn/tree/master/models>`_ folder.
 We can plot a model and its associated dataset via the command:
 
 .. code-block:: bash
@@ -74,19 +74,17 @@ To reproduce the results from scratch, we can run the scripts matching the patte
 Developers
 ==========
 
-*HTV-Learn* is developed by the `Biomedical Imaging Group <http://bigwww.epfl.ch/>`_,
+*HTV-Learn* is developed by the `Biomedical Imaging Group <https://bigwww.epfl.ch/>`_,
 `École Polytéchnique Fédérale de Lausanne <https://www.epfl.ch/en/>`_, Switzerland.
 
-Original author:
-
--   **Joaquim Campos** (joaquimcampos15@hotmail.com)
+Original author: **Joaquim Campos** (joaquimcampos15@duck.com)
 
 References
 ==========
 
-.. [Campos2020] J. Campos, S. Aziznejad, M. Unser, "Learning of Continuous and Piecewise-Linear Functions with Hessian Total-Variation Regularization" (submitted)
+* `[Campos2022] <https://ieeexplore.ieee.org/document/9655475>`_ J. Campos, S. Aziznejad, and M. Unser, “Learning of Continuous and Piecewise-Linear Functions With Hessian Total-Variation Regularization,” IEEE Open Journal of Signal Processing, vol. 3, pp. 36-48, 2022.
 
-.. [Aziznejad2020] S. Aziznejad, J. Campos, M. Unser, "Measuring Complexity of Learning Schemes Using Hessian-Schatten Total-Variation" (submitted)
+* `[Aziznejad2023] <https://epubs.siam.org/doi/10.1137/22M147517X>`_ S. Aziznejad, J. Campos, and M. Unser, “Measuring Complexity of Learning Schemes Using Hessian-Schatten Total Variation,” SIAM Journal on Mathematics of Data Science, vol. 5, no. 2, pp. 422-445, 2023.
 
 License
 =======
